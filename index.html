@@ -213,9 +213,17 @@
   const iframeUrl = String(s.image || '').replace('iframe:', '').replace('link:', '').trim();
 
   // 停留幾秒後直接跳轉
-  setTimeout(() => {
-    window.location.href = iframeUrl;
-  }, 1000);
+  if (String(s.image || '').startsWith('iframe:') || String(s.image || '').startsWith('link:')) {
+  return `
+    <div class="slide">
+      <div class="content">
+        <div class="badge">${badgeText}</div>
+        <h1>${escapeHtml(s.title)}</h1>
+        <div class="subtitle">即將進入互動頁面...</div>
+      </div>
+    </div>
+  `;
+}
 
   return `
     <div class="slide">
@@ -250,6 +258,17 @@ return `
 
       if (!els[current]) current = 0;
       els[current].classList.add('active');
+      const img = String(slides[current].image || '');
+
+if (img.startsWith('iframe:') || img.startsWith('link:')) {
+  const iframeUrl = img.replace('iframe:', '').replace('link:', '').trim();
+
+  timer = setTimeout(function() {
+    window.location.href = iframeUrl;
+  }, 3000);
+
+  return;
+}
 
       const duration = Number(slides[current].duration || 12) * 1000;
 
