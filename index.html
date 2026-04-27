@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Haidian Hidden Library</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: "Microsoft JhengHei", Arial, sans-serif;
+    }
+
+    #screen {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+      color: white;
+      background: #000;
+    }
+
+    .topbar {
+      position: absolute;
+      top: 28px;
+      left: 40px;
+      right: 40px;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      font-size: 28px;
+      font-weight: 700;
+      text-shadow: 0 2px 8px rgba(0,0,0,.8);
+    }
+
+    #slides {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transition: opacity 1s ease;
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: #000;
+    }
+
+    .slide.active {
+      opacity: 1;
+      z-index: 2;
+    }
+
+    .slide.no-image {
+      background: linear-gradient(135deg, #263238, #1565c0);
+    }
+
+    .overlay {
+      display: none;
+    }
+
+    .content {
+      position: absolute;
+      left: 6vw;
+      bottom: 8vh;
+      z-index: 25;
+      background: rgba(0,0,0,.65);
+      padding: 12px 16px 14px;
+      border-radius: 12px;
+      box-sizing: border-box;
+      max-width: 40vw;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: #00bcd4;
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+    }
+
+    h1 {
+      font-size: 30px;
+      line-height: 1.25;
+      margin: 0 0 6px;
+      font-weight: 900;
+    }
+
+    .subtitle {
+      font-size: 20px;
+      line-height: 1.35;
+      font-weight: 500;
+      opacity: .92;
+    }
+
+    #marqueeWrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 48px;
+      z-index: 30;
+      background: rgba(0,0,0,.82);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      border-top: 2px solid rgba(255,255,255,.25);
+    }
+
+    #marquee {
+      white-space: nowrap;
+      font-size: 28px;
+      font-weight: 800;
+      padding-left: 100%;
+      animation: marquee 28s linear infinite;
+    }
+
+    .empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      box-sizing: border-box;
+      padding: 70px;
+      font-size: 48px;
+      line-height: 1.6;
+      text-align: center;
+      background: linear-gradient(135deg, #263238, #1565c0);
+    }
+
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="screen">
+    <div class="topbar">
+      <div>海佃地下圖書室</div>
+      <div id="clock"></div>
+    </div>
+
+    <div id="slides"></div>
+
+    <div id="marqueeWrap">
+      <div id="marquee">Hidden below, growing beyond.</div>
+    </div>
+  </div>
+
+  <script>
+    const GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
+
+    let slides = [];
+    let current = 0;
+    let timer = null;
+
+    function loadData() {
+      const oldScript = document.getElementById('jsonpScript');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'jsonpScript';
+      script.src = GAS_API_URL + '?callback=handleData&t=' + Date.now();
+      document.body.appendChild(script);
+    }
+
+    function handleData(data) {
+      slides = data.slides || [];
+
+      document.getElementById('marquee').textContent =
+        data.marquee || 'Hidden below, growing beyond.';
+
+      current = 0;
+      renderSlides();
+      play();
+    }
+
+    function renderSlides() {
+      const box = document.getElementById('slides');
+
+      if (!slides.length) {
+        box.innerHTML =
+          '<div class="empty">目前沒有可播放的圖書室消息<br>請確認 Google 試算表資料</div>';
+        return;
+      }
+
+      box.innerHTML = slides.map(function(s) {
+        const hasImage = !!s.image;
+        const bg = hasImage
+          ? "background-image:url('" + escapeAttr(s.image) + "')"
+          : "";
+
+        let badgeText = '圖書室消息';
+        if (s.type === 'breaking') badgeText = '號外插播';
+
+        return `
+          <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
+            <div class="overlay"></div>
+            <div class="content">
+              <div class="badge">${badgeText}</div>
+              <h1>${escapeHtml(s.title)}</h1>
+              <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function play() {
+      clearTimeout(timer);
+      if (!slides.length) return;
+
+      const els = document.querySelectorAll('.slide');
+      els.forEach(el => el.classList.remove('active'));
+
+      if (!els[current]) current = 0;
+      els[current].classList.add('active');
+
+      const duration = Number(slides[current].duration || 12) * 1000;
+
+      timer = setTimeout(function() {
+        current = (current + 1) % slides.length;
+        play();
+      }, duration);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      document.getElementById('clock').textContent =
+        now.toLocaleString('zh-TW', {
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeAttr(str) {
+      return String(str || '')
+        .replace(/'/g, '%27')
+        .replace(/"/g, '%22');
+    }
+
+    updateClock();
+    setInterval(updateClock, 10000);
+
+    loadData();
+    setInterval(loadData, 5 * 60 * 1000);
+
+    setInterval(function() {
+      location.reload();
+    }, 6 * 60 * 60 * 1000);
+  </script>
+</body>
+</html>
