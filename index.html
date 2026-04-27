@@ -181,7 +181,28 @@
 }
 
     function handleData(data) {
-      slides = data.slides || [];
+      const rawSlides = data.slides || [];
+      
+      // 分流：將「號外」與「一般文章」分開
+      const breakingNews = rawSlides.filter(s => s.type === 'breaking');
+      const posts = rawSlides.filter(s => s.type === 'post');
+      
+      let mixedSlides = [];
+
+      if (breakingNews.length > 0 && posts.length > 0) {
+        // 高頻率穿插邏輯：一般文章 -> 號外 -> 一般文章 -> 號外
+        let breakIndex = 0;
+        posts.forEach(post => {
+          mixedSlides.push(post); // 放入一般文章
+          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]); // 放入號外（若號外較少則會循環重複播放）
+          breakIndex++;
+        });
+      } else {
+        // 如果目前沒有號外，或沒有一般文章，就直接使用原本的陣列
+        mixedSlides = rawSlides;
+      }
+
+      slides = mixedSlides; // 更新全域播放清單
 
       document.getElementById('marquee').textContent =
         data.marquee || 'Hidden below, growing beyond.';
