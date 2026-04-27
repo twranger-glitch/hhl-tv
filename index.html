@@ -168,14 +168,14 @@
     let timer = null;
 
     function loadData() {
-      const oldScript = document.getElementById('jsonpScript');
-      if (oldScript) oldScript.remove();
+  const oldScript = document.getElementById('jsonpScript');
+  if (oldScript) oldScript.remove();
 
-      const script = document.createElement('script');
-      script.id = 'jsonpScript';
-      script.src = GAS_API_URL + '?callback=handleData&t=' + Date.now();
-      document.body.appendChild(script);
-    }
+  const script = document.createElement('script');
+  script.id = 'jsonpScript';
+  script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
+  document.body.appendChild(script);
+}
 
     function handleData(data) {
       slides = data.slides || [];
@@ -267,11 +267,11 @@
     setInterval(updateClock, 10000);
 
     loadData();
-    setInterval(loadData, 5 * 60 * 1000);
+    setInterval(loadData, 30 * 1000);
 
     setInterval(function() {
-      location.reload();
-    }, 6 * 60 * 60 * 1000);
+  location.reload();
+}, 60 * 60 * 1000);
   </script>
 </body>
 </html>
