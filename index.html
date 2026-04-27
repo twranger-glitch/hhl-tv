@@ -209,8 +209,8 @@
         let badgeText = '圖書室消息';
         if (s.type === 'breaking') badgeText = '號外插播';
 
-        if (String(s.image || '').startsWith('iframe:')) {
-  const iframeUrl = String(s.image || '').replace('iframe:', '').trim();
+        if (String(s.image || '').startsWith('iframe:') || String(s.image || '').startsWith('link:')) {
+  const iframeUrl = String(s.image || '').replace('iframe:', '').replace('link:', '').trim();
 
   // 停留幾秒後直接跳轉
   setTimeout(() => {
