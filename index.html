@@ -59,9 +59,12 @@
       z-index: 2;
     }
 
-    .slide.no-image {
-      background: linear-gradient(135deg, #263238, #1565c0);
-    }
+    .slide iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #000;
+}
 
     .overlay {
       display: none;
@@ -206,16 +209,26 @@
         let badgeText = '圖書室消息';
         if (s.type === 'breaking') badgeText = '號外插播';
 
-        return `
-          <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
-            <div class="overlay"></div>
-            <div class="content">
-              <div class="badge">${badgeText}</div>
-              <h1>${escapeHtml(s.title)}</h1>
-              <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
-            </div>
-          </div>
-        `;
+        if (String(s.image || '').startsWith('iframe:')) {
+  const iframeUrl = String(s.image || '').replace('iframe:', '').trim();
+
+  return `
+    <div class="slide iframe-slide">
+      <iframe src="${escapeAttr(iframeUrl)}" allow="autoplay; fullscreen"></iframe>
+    </div>
+  `;
+}
+
+return `
+  <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
+    <div class="overlay"></div>
+    <div class="content">
+      <div class="badge">${badgeText}</div>
+      <h1>${escapeHtml(s.title)}</h1>
+      <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+    </div>
+  </div>
+`;
       }).join('');
     }
 
