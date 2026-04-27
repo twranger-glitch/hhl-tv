@@ -4,13 +4,16 @@
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
   <style>
+    /* 引入高質感字體 Noto Sans TC */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
+
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
       background: #000;
-      font-family: "Microsoft JhengHei", Arial, sans-serif;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
     }
 
     #screen {
@@ -59,17 +62,15 @@
       z-index: 2;
     }
 
-    .slide iframe {
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #000;
-}
+    .slide.no-image {
+      background: linear-gradient(135deg, #263238, #1565c0);
+    }
 
     .overlay {
       display: none;
     }
 
+    /* 加入上浮淡入動畫的卡片 */
     .content {
       position: absolute;
       left: 6vw;
@@ -80,6 +81,16 @@
       border-radius: 12px;
       box-sizing: border-box;
       max-width: 40vw;
+      
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .slide.active .content {
+      opacity: 1;
+      transform: translateY(0);
+      transition-delay: 0.3s;
     }
 
     .badge {
@@ -164,6 +175,7 @@
   </div>
 
   <script>
+    // 你的 API 網址
     const GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
     let slides = [];
@@ -171,24 +183,59 @@
     let timer = null;
 
     function loadData() {
-  const oldScript = document.getElementById('jsonpScript');
-  if (oldScript) oldScript.remove();
+      const oldScript = document.getElementById('jsonpScript');
+      if (oldScript) oldScript.remove();
 
-  const script = document.createElement('script');
-  script.id = 'jsonpScript';
-  script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
-  document.body.appendChild(script);
-}
+      const script = document.createElement('script');
+      script.id = 'jsonpScript';
+      script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
+      document.body.appendChild(script);
+    }
 
     function handleData(data) {
-      slides = data.slides || [];
+      const rawSlides = data.slides || [];
+      
+      // 1. 【高頻率穿插邏輯】將「號外」與「一般文章」分開
+      const breakingNews = rawSlides.filter(s => s.type === 'breaking');
+      const posts = rawSlides.filter(s => s.type === 'post');
+      
+      let mixedSlides = [];
+
+      if (breakingNews.length > 0 && posts.length > 0) {
+        let breakIndex = 0;
+        posts.forEach(post => {
+          mixedSlides.push(post);
+          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
+          breakIndex++;
+        });
+      } else {
+        mixedSlides = rawSlides;
+      }
+
+      slides = mixedSlides;
 
       document.getElementById('marquee').textContent =
         data.marquee || 'Hidden below, growing beyond.';
 
-      current = 0;
+      // 2. 【修復重整歸零問題】確保 current 不會因為資料變少而出界
+      if (current >= slides.length) {
+        current = 0;
+      }
+
+      // 重新渲染畫面
       renderSlides();
-      play();
+      
+      // 讓當前畫面保持啟動狀態，不會閃屏
+      const els = document.querySelectorAll('.slide');
+      els.forEach(el => el.classList.remove('active'));
+      if (els[current]) {
+        els[current].classList.add('active');
+      }
+
+      // 3. 如果計時器沒在跑（初次載入），才呼叫 play 啟動輪播
+      if (!timer) {
+        play();
+      }
     }
 
     function renderSlides() {
@@ -200,52 +247,25 @@
         return;
       }
 
+      // 完全乾淨的渲染邏輯，拔除 iframe 與 link 判斷
       box.innerHTML = slides.map(function(s) {
         const hasImage = !!s.image;
         const bg = hasImage
           ? "background-image:url('" + escapeAttr(s.image) + "')"
           : "";
 
-        let badgeText = '圖書室消息';
-        if (s.type === 'breaking') badgeText = '號外插播';
+        let badgeText = s.type === 'breaking' ? '號外插播' : '圖書室消息';
 
-        if (String(s.image || '').startsWith('iframe:') || String(s.image || '').startsWith('link:')) {
-  const iframeUrl = String(s.image || '').replace('iframe:', '').replace('link:', '').trim();
-
-  // 停留幾秒後直接跳轉
-  if (String(s.image || '').startsWith('iframe:') || String(s.image || '').startsWith('link:')) {
-  return `
-    <div class="slide">
-      <div class="content">
-        <div class="badge">${badgeText}</div>
-        <h1>${escapeHtml(s.title)}</h1>
-        <div class="subtitle">即將進入互動頁面...</div>
-      </div>
-    </div>
-  `;
-}
-
-  return `
-    <div class="slide">
-      <div class="content">
-        <div class="badge">${badgeText}</div>
-        <h1>${escapeHtml(s.title)}</h1>
-        <div class="subtitle">即將進入互動頁面...</div>
-      </div>
-    </div>
-  `;
-}
-
-return `
-  <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
-    <div class="overlay"></div>
-    <div class="content">
-      <div class="badge">${badgeText}</div>
-      <h1>${escapeHtml(s.title)}</h1>
-      <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
-    </div>
-  </div>
-`;
+        return `
+          <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
+            <div class="overlay"></div>
+            <div class="content">
+              <div class="badge">${badgeText}</div>
+              <h1>${escapeHtml(s.title)}</h1>
+              <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+            </div>
+          </div>
+        `;
       }).join('');
     }
 
@@ -258,18 +278,8 @@ return `
 
       if (!els[current]) current = 0;
       els[current].classList.add('active');
-      const img = String(slides[current].image || '');
 
-if (img.startsWith('iframe:') || img.startsWith('link:')) {
-  const iframeUrl = img.replace('iframe:', '').replace('link:', '').trim();
-
-  timer = setTimeout(function() {
-    window.location.href = iframeUrl;
-  }, 3000);
-
-  return;
-}
-
+      // 純粹的輪播計時邏輯，拔除 window.location.href 跳轉
       const duration = Number(slides[current].duration || 12) * 1000;
 
       timer = setTimeout(function() {
@@ -307,12 +317,14 @@ if (img.startsWith('iframe:') || img.startsWith('link:')) {
     updateClock();
     setInterval(updateClock, 10000);
 
+    // 每 30 秒向 GAS 拿一次最新資料 (無縫更新)
     loadData();
     setInterval(loadData, 30 * 1000);
 
+    // 每 1 小時徹底重整一次網頁 (釋放電視記憶體)
     setInterval(function() {
-  location.reload();
-}, 60 * 60 * 1000);
+      location.reload();
+    }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
