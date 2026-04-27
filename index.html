@@ -233,9 +233,7 @@
       }
 
       // 3. 如果計時器沒在跑（初次載入），才呼叫 play 啟動輪播
-      if (!timer) {
-        play();
-      }
+      play();
     }
 
     function renderSlides() {
@@ -270,8 +268,10 @@
     }
 
     function play() {
-      clearTimeout(timer);
-      if (!slides.length) return;
+  clearTimeout(timer);
+  timer = null; // 👈 加這行（避免殘留）
+
+  if (!slides.length) return;
 
       const els = document.querySelectorAll('.slide');
       els.forEach(el => el.classList.remove('active'));
