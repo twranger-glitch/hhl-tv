@@ -212,14 +212,17 @@
         if (String(s.image || '').startsWith('iframe:')) {
   const iframeUrl = String(s.image || '').replace('iframe:', '').trim();
 
-  return `
-    <div class="slide iframe-slide">
-      <iframe src="${escapeAttr(iframeUrl)}" allow="autoplay; fullscreen"></iframe>
+  // 停留幾秒後直接跳轉
+  setTimeout(() => {
+    window.location.href = iframeUrl;
+  }, 1000);
 
+  return `
+    <div class="slide">
       <div class="content">
         <div class="badge">${badgeText}</div>
         <h1>${escapeHtml(s.title)}</h1>
-        <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+        <div class="subtitle">即將進入互動頁面...</div>
       </div>
     </div>
   `;
