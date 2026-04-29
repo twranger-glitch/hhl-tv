@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  
+  <!-- 引入高質感字體 Noto Sans TC -->
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  
+  <!-- 🌟 導入業界標準 FontAwesome 向量圖標庫 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+  <style>
     html, body {
       margin: 0;
       width: 100%;
@@ -122,10 +127,9 @@
       color: #e0e0e0;
     }
 
-    /* 🔥 修正版：一個人一橫排的直列排版 */
     .name-grid {
       display: flex;
-      flex-direction: column; /* 改成由上往下排列 */
+      flex-direction: column;
       gap: 14px;
       margin-bottom: 20px;
     }
@@ -134,7 +138,7 @@
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 10px 24px;
-      border-radius: 10px; /* 稍微方正一點，像真實名牌 */
+      border-radius: 10px;
       font-size: 26px;
       font-weight: 700;
       color: #ffffff;
@@ -142,12 +146,20 @@
       align-items: center;
       gap: 16px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-      width: fit-content; /* 寬度配合文字長度 */
+      width: fit-content;
     }
     
     .name-chip .icon {
       font-size: 22px;
-      opacity: 0.9;
+      opacity: 1;
+    }
+
+    /* 班級專屬微調：略小、微透明 */
+    .class-prefix {
+      font-size: 0.85em;
+      opacity: 0.75;
+      margin-right: -4px; /* 拉近跟名字的距離 */
+      font-weight: 500;
     }
 
     .quote {
@@ -293,15 +305,16 @@
         duration: v.duration
       }));
 
+      // 🔥 修正：把班級(classStr)獨立傳遞，不跟名字混在一起
       const formattedStudents = activeStudents.map(v => ({
         type: 'studentVol',
-        title: (v.classStr ? v.classStr + ' ' : '') + v.name,
+        title: v.name, 
+        classStr: v.classStr, 
         subtitle: '圖書室小志工，為您服務！',
         image: v.image,
         duration: v.duration
       }));
 
-      // 🔥 修正版：依序排隊模式 (先播號外 -> 再播文章 -> 再播大人志工 -> 最後播小志工)
       currentSlides = [...breaking, ...posts, ...formattedVols, ...formattedStudents];
 
       if (current >= currentSlides.length) current = 0;
@@ -344,11 +357,22 @@
         }
 
         if (s.type === 'volunteer' || s.type === 'studentVol') {
-          // 🔥 修正版：拿掉空白切割，只允許換行(\n)或逗號(,)來分隔志工
           let names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
           
-          let icon = s.type === 'volunteer' ? '⭐' : '🌟';
-          let chips = names.map(n => `<div class="name-chip"><span class="icon">${icon}</span>${escapeHtml(n)}</div>`).join('');
+          // 🔥 導入 FontAwesome 高質感圖標
+          let iconHtml = s.type === 'volunteer' 
+            ? '<i class="fa-solid fa-user-check" style="color: #ffb74d;"></i>' 
+            : '<i class="fa-solid fa-book-reader" style="color: #81c784;"></i>';
+          
+          let chips = names.map(n => {
+            // 如果是小志工且有填寫班級，就把班級塞到每個人名字前面
+            let classPrefix = (s.type === 'studentVol' && s.classStr) 
+              ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>` 
+              : '';
+              
+            return `<div class="name-chip"><span class="icon">${iconHtml}</span>${classPrefix}${escapeHtml(n)}</div>`;
+          }).join('');
+          
           let quoteClass = s.type === 'studentVol' ? 'quote-student' : '';
 
           bodyHtml = `
