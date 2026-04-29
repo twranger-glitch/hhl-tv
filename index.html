@@ -174,28 +174,30 @@
       border-left-color: #4caf50;
     }
 
-    /* 🔥 退回原本完美的置中設定 */
+    /* 🔥 終極跑馬燈修復區塊：加高、鎖行高、強制上抬 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 0;
-      height: 52px;
+      height: 64px; /* 🏆 加高黑框，給字體伸展空間 */
       z-index: 30;
       background: rgba(0,0,0,.85);
       overflow: hidden;
       display: flex;
-      align-items: center;
+      align-items: center; /* 保持 flex 垂直置中 */
       border-top: 1px solid rgba(255,255,255,.15);
     }
 
     #marquee {
       white-space: nowrap;
-      font-size: 28px;
+      font-size: 30px; /* 字體微調搭配新高度 */
+      line-height: 1; /* 🏆 拔除字體自帶的隱形上下空間 */
       font-weight: 700;
       letter-spacing: 1px;
       padding-left: 100%;
-      animation: marquee 32s linear infinite; /* 速度微調保持滑順 */
+      transform: translateY(-3px); /* 🏆 物理微調：直接把字往上推 3 像素 */
+      animation: marquee 32s linear infinite;
     }
 
     .empty {
