@@ -174,28 +174,28 @@
       border-left-color: #4caf50;
     }
 
-    /* 🔥 修正：跑馬燈絕對不會爆框的完美寫法 */
+    /* 🔥 退回原本完美的置中設定 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 0;
       height: 52px;
-      line-height: 52px; /* 取代 flex 的垂直置中法 */
       z-index: 30;
       background: rgba(0,0,0,.85);
       overflow: hidden;
-      white-space: nowrap;
+      display: flex;
+      align-items: center;
       border-top: 1px solid rgba(255,255,255,.15);
     }
 
     #marquee {
-      display: inline-block;
+      white-space: nowrap;
       font-size: 28px;
       font-weight: 700;
       letter-spacing: 1px;
-      padding-left: 100vw; /* 讓文字精準從畫面最右側外緣出發 */
-      animation: marquee 32s linear infinite; /* 稍微放慢一點點速度 */
+      padding-left: 100%;
+      animation: marquee 32s linear infinite; /* 速度微調保持滑順 */
     }
 
     .empty {
@@ -212,8 +212,8 @@
     }
 
     @keyframes marquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
     }
   </style>
 </head>
@@ -357,7 +357,6 @@
         if (s.type === 'volunteer' || s.type === 'studentVol') {
           let names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
           
-          // 🔥 修正：更換為高質感的「手捧愛心」志工圖標
           let iconHtml = s.type === 'volunteer' 
             ? '<i class="fa-solid fa-hand-holding-heart" style="color: #ffb74d;"></i>' 
             : '<i class="fa-solid fa-book-reader" style="color: #81c784;"></i>';
