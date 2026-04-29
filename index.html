@@ -3,12 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
+  
+  <!-- 引入 Google 字體 (Noto Sans TC) -->
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+  
+  <!-- 🌟 改用輕量、高相容性的 Google Material Symbols 圖標 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
-
+    /* 確保螢幕完全鎖定，不產生任何不必要的滾動或溢出 */
     html, body {
       margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -17,9 +23,8 @@
     }
 
     #screen {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
+      position: absolute;
+      inset: 0; 
       overflow: hidden;
       color: white;
       background: #000;
@@ -46,14 +51,11 @@
 
     .slide {
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;
       width: 100%;
       height: 100%;
-
       opacity: 0;
-      transition: opacity 1s ease;
-
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
       background-size: contain;
       background-position: center;
       background-repeat: no-repeat;
@@ -66,7 +68,7 @@
     }
 
     .slide.no-image {
-      background: linear-gradient(135deg, #263238, #1565c0);
+      background: radial-gradient(circle at top right, #1a2a6c, #112b3c, #000000);
     }
 
     .content {
@@ -74,115 +76,120 @@
       left: 6vw;
       bottom: 11vh;
       z-index: 25;
-
-      background: rgba(0,0,0,.68);
-      padding: 14px 18px 16px;
-      border-radius: 12px;
+      background: rgba(15, 15, 15, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 12px 40px rgba(0,0,0, 0.6);
+      padding: 24px 32px;
+      border-radius: 16px;
       box-sizing: border-box;
-      max-width: 46vw;
-
+      max-width: 48vw;
       opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.8s ease;
+      transform: translateY(30px);
+      transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .slide.active .content {
       opacity: 1;
       transform: translateY(0);
+      transition-delay: 0.4s;
     }
 
     .badge {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
+      padding: 6px 14px;
+      border-radius: 6px;
       font-size: 18px;
       font-weight: 900;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-      background: #00bcd4;
-      color: #fff;
+      margin-bottom: 20px;
+      letter-spacing: 1.5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-
-    .badge-breaking {
-      background: #d32f2f;
-    }
-
-    .badge-volunteer {
-      background: #f57c00;
-    }
-
-    .badge-student {
-      background: #388e3c;
-    }
+    .badge-post { background: linear-gradient(135deg, #00bcd4, #008ba3); color: #fff; }
+    .badge-breaking { background: linear-gradient(135deg, #f44336, #d32f2f); color: #fff; }
+    .badge-volunteer { background: linear-gradient(135deg, #ff9800, #f57c00); color: #fff; }
+    .badge-student { background: linear-gradient(135deg, #4caf50, #388e3c); color: #fff; }
 
     h1 {
-      font-size: 30px;
-      line-height: 1.25;
-      margin: 0 0 6px;
+      font-size: 34px;
+      line-height: 1.3;
+      margin: 0 0 10px;
       font-weight: 900;
     }
 
     .subtitle {
       font-size: 20px;
-      line-height: 1.35;
-      font-weight: 500;
-      opacity: .92;
+      line-height: 1.5;
+      font-weight: 400;
+      color: #e0e0e0;
     }
 
     .name-grid {
-      display: block;
-      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
     }
 
     .name-chip {
-      display: block;
-      width: auto;
-      margin-bottom: 10px;
-      padding: 8px 18px 8px 14px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 10px 24px;
       border-radius: 10px;
-      background: rgba(255,255,255,.13);
-      border: 1px solid rgba(255,255,255,.18);
       font-size: 26px;
-      font-weight: 800;
-      line-height: 1.3;
-      white-space: nowrap;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      width: fit-content;
     }
-
-    .name-icon {
-      display: inline-block;
-      width: 38px;
-      margin-right: 18px;
+    
+    /* 🌟 Google 圖標專屬微調 */
+    .material-symbols-rounded {
+      font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
+    }
+    .name-chip .icon {
+      font-size: 28px;
+      opacity: 1;
+      width: 28px;
       text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .class-prefix {
-      display: inline-block;
-      margin-right: 14px;
-      font-size: 22px;
-      opacity: .8;
-      font-weight: 700;
+      font-size: 0.85em;
+      opacity: 0.75;
+      margin-right: -4px;
+      font-weight: 500;
     }
 
     .quote {
       font-size: 22px;
-      line-height: 1.45;
+      line-height: 1.5;
       font-weight: 500;
       color: #f5f5f5;
       border-left: 4px solid #ff9800;
-      padding-left: 14px;
-      margin-top: 8px;
+      padding-left: 16px;
+      margin-top: 10px;
+      font-style: italic;
     }
-
     .quote-student {
       border-left-color: #4caf50;
     }
 
+    /* 🔥 電視友善跑馬燈 (加高防切) */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 12px;
-      height: 48px;
+      height: 60px; /* 加高避免裁切 */
       z-index: 30;
       background: rgba(0,0,0,.86);
       overflow: hidden;
@@ -196,6 +203,9 @@
       font-size: 28px;
       font-weight: 800;
       padding-left: 100%;
+      line-height: normal;
+      -webkit-font-smoothing: antialiased;
+      will-change: transform;
       animation: marquee 30s linear infinite;
     }
 
@@ -211,10 +221,10 @@
       height: 100%;
       box-sizing: border-box;
       padding: 70px;
-      font-size: 48px;
+      font-size: 40px;
       line-height: 1.6;
       text-align: center;
-      background: linear-gradient(135deg, #263238, #1565c0);
+      background: radial-gradient(circle at center, #263238, #000000);
     }
   </style>
 </head>
@@ -234,218 +244,201 @@
   </div>
 
   <script>
-    var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
+    const GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    var rawData = {
-      slides: [],
-      volunteers: [],
-      studentVols: [],
-      marquee: ''
-    };
+    let rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
+    let currentSlides = [];
+    let currentVolsCache = ''; 
+    let current = 0;
+    let timer = null;
 
-    var slides = [];
-    var current = 0;
-    var timer = null;
+    let serverTimeBase = Date.now();
+    let localTimeAtSync = performance.now();
+    
+    // 📺 防卡頓記憶體
+    let rawDataCacheString = '';
+
+    function getAccurateTime() {
+      return new Date(serverTimeBase + (performance.now() - localTimeAtSync));
+    }
 
     function loadData() {
-      var oldScript = document.getElementById('jsonpScript');
-      if (oldScript) {
-        oldScript.parentNode.removeChild(oldScript);
-      }
+      const oldScript = document.getElementById('jsonpScript');
+      if (oldScript) oldScript.remove();
 
-      var script = document.createElement('script');
+      const script = document.createElement('script');
       script.id = 'jsonpScript';
       script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
       document.body.appendChild(script);
     }
 
     function handleData(data) {
+      if (data.serverTime) {
+        serverTimeBase = data.serverTime;
+        localTimeAtSync = performance.now();
+      }
+
+      // 📺 若資料完全沒變，直接略過重繪，保持動畫極致順暢
+      var newDataString = JSON.stringify(data);
+      if (rawDataCacheString === newDataString) {
+        checkAndRebuildSlides(false);
+        return; 
+      }
+      rawDataCacheString = newDataString;
+
       rawData.slides = data.slides || [];
       rawData.volunteers = data.volunteers || [];
       rawData.studentVols = data.studentVols || [];
-      rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
+      
+      document.getElementById('marquee').textContent = data.marquee || 'Hidden below, growing beyond.';
 
-      document.getElementById('marquee').textContent = rawData.marquee;
-
-      buildSlides();
-
-      if (current >= slides.length) {
-        current = 0;
-      }
-
-      renderSlides();
-      play();
+      checkAndRebuildSlides(true);
     }
 
-    function buildSlides() {
-      var now = new Date();
-      var day = now.getDay();
-      var mins = now.getHours() * 60 + now.getMinutes();
+    function checkAndRebuildSlides(forceRebuild = false) {
+      if (!rawData.slides.length && !rawData.volunteers.length && !rawData.studentVols.length) return;
 
-      var rawSlides = rawData.slides || [];
-      var breakingNews = [];
-      var posts = [];
+      const now = getAccurateTime();
+      const day = now.getDay(); 
+      const mins = now.getHours() * 60 + now.getMinutes(); 
 
-      for (var i = 0; i < rawSlides.length; i++) {
-        if (rawSlides[i].type === 'breaking') {
-          breakingNews.push(rawSlides[i]);
-        } else {
-          posts.push(rawSlides[i]);
-        }
+      const activeVols = rawData.volunteers.filter(v => 
+        v.dayOfWeek === day && mins >= v.startMins && mins <= v.endMins
+      );
+      
+      const activeStudents = rawData.studentVols.filter(v => v.dayOfWeek === day);
+
+      const volSignature = JSON.stringify(activeVols) + JSON.stringify(activeStudents);
+      
+      if (!forceRebuild && volSignature === currentVolsCache) {
+        return; 
+      }
+      currentVolsCache = volSignature;
+
+      const posts = rawData.slides.filter(s => s.type === 'post');
+      const breaking = rawData.slides.filter(s => s.type === 'breaking');
+
+      const formattedVols = activeVols.map(v => ({
+        type: 'volunteer',
+        title: v.name, 
+        subtitle: v.phrase,
+        image: v.image,
+        duration: v.duration
+      }));
+
+      const formattedStudents = activeStudents.map(v => ({
+        type: 'studentVol',
+        title: v.name, 
+        classStr: v.classStr, 
+        subtitle: v.phrase || '圖書室小志工，為您服務！', 
+        image: v.image,
+        duration: v.duration
+      }));
+
+      currentSlides = [...breaking, ...posts, ...formattedVols, ...formattedStudents];
+
+      if (current >= currentSlides.length) current = 0;
+
+      renderSlides();
+      const els = document.querySelectorAll('.slide');
+      els.forEach(el => el.classList.remove('active'));
+      if (els[current]) {
+        els[current].classList.add('active');
       }
 
-      var mixedSlides = [];
-
-      if (breakingNews.length > 0 && posts.length > 0) {
-        var breakIndex = 0;
-        for (var p = 0; p < posts.length; p++) {
-          mixedSlides.push(posts[p]);
-          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
-          breakIndex++;
-        }
-      } else {
-        mixedSlides = rawSlides.slice(0);
-      }
-
-      var activeVols = [];
-      for (var v = 0; v < rawData.volunteers.length; v++) {
-        var item = rawData.volunteers[v];
-        if (item.dayOfWeek === day && mins >= item.startMins && mins <= item.endMins) {
-          activeVols.push({
-            type: 'volunteer',
-            title: item.name,
-            subtitle: item.phrase,
-            image: item.image,
-            duration: item.duration
-          });
-        }
-      }
-
-      var activeStudents = [];
-      for (var s = 0; s < rawData.studentVols.length; s++) {
-        var stu = rawData.studentVols[s];
-        if (stu.dayOfWeek === day) {
-          activeStudents.push({
-            type: 'studentVol',
-            title: stu.name,
-            classStr: stu.classStr,
-            subtitle: stu.phrase || '圖書室小志工，為您服務！',
-            image: stu.image,
-            duration: stu.duration
-          });
-        }
-      }
-
-      slides = mixedSlides.concat(activeVols).concat(activeStudents);
+      if (!timer) play();
     }
 
     function renderSlides() {
-      var box = document.getElementById('slides');
+      const box = document.getElementById('slides');
 
-      if (!slides.length) {
-        box.innerHTML =
-          '<div class="empty">目前沒有可播放的圖書室消息<br>請確認 Google 試算表資料</div>';
+      if (!currentSlides.length) {
+        box.innerHTML = '<div class="empty">目前沒有可播放的消息<br>請確認 Google 試算表資料</div>';
         return;
       }
 
-      var html = '';
+      box.innerHTML = currentSlides.map(function(s) {
+        const hasImage = !!s.image;
+        const bg = hasImage ? "background-image:url('" + escapeAttr(s.image) + "')" : "";
 
-      for (var i = 0; i < slides.length; i++) {
-        var item = slides[i];
-        var hasImage = !!item.image;
-        var bg = hasImage ? "background-image:url('" + escapeAttr(item.image) + "')" : "";
-
-        var badgeText = '圖書室消息';
-        var badgeClass = '';
-
-        if (item.type === 'breaking') {
-          badgeText = '號外插播';
-          badgeClass = 'badge-breaking';
-        } else if (item.type === 'volunteer') {
-          badgeText = '今日值班志工';
-          badgeClass = 'badge-volunteer';
-        } else if (item.type === 'studentVol') {
-          badgeText = '今日小志工';
-          badgeClass = 'badge-student';
+        let badgeText = '圖書室消息';
+        let badgeClass = 'badge-post';
+        let bodyHtml = '';
+        
+        if (s.type === 'breaking') { 
+          badgeText = '號外插播'; 
+          badgeClass = 'badge-breaking'; 
+        } else if (s.type === 'volunteer') { 
+          badgeText = '今日值班志工'; 
+          badgeClass = 'badge-volunteer'; 
+        } else if (s.type === 'studentVol') { 
+          badgeText = '今日小志工'; 
+          badgeClass = 'badge-student'; 
         }
 
-        var bodyHtml = '';
+        if (s.type === 'volunteer' || s.type === 'studentVol') {
+          let names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
+          
+          // 🌟 改用 Google Material Symbols，效能極佳
+          let iconHtml = s.type === 'volunteer' 
+            ? '<span class="material-symbols-rounded icon" style="color: #ffb74d;">volunteer_activism</span>' 
+            : '<span class="material-symbols-rounded icon" style="color: #81c784;">local_library</span>';
+          
+          let chips = names.map(n => {
+            let classPrefix = (s.type === 'studentVol' && s.classStr) 
+              ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>` 
+              : '';
+              
+            return `<div class="name-chip">${iconHtml}${classPrefix}${escapeHtml(n)}</div>`;
+          }).join('');
+          
+          let quoteClass = s.type === 'studentVol' ? 'quote-student' : '';
 
-        if (item.type === 'volunteer' || item.type === 'studentVol') {
-          var names = String(item.title || '').split(/[\n、,，]+/);
-          var chips = '';
-
-          for (var n = 0; n < names.length; n++) {
-            var name = trimText(names[n]);
-            if (!name) continue;
-
-            var icon = item.type === 'volunteer' ? '❤' : '📖';
-            var classText = '';
-
-            if (item.type === 'studentVol' && item.classStr) {
-              classText = '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>';
-            }
-
-            chips +=
-              '<div class="name-chip">' +
-                '<span class="name-icon">' + icon + '</span>' +
-                classText +
-                '<span>' + escapeHtml(name) + '</span>' +
-              '</div>';
-          }
-
-          var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
-
-          bodyHtml =
-            '<div class="name-grid">' + chips + '</div>' +
-            (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
+          bodyHtml = `
+            <div class="name-grid">${chips}</div>
+            ${s.subtitle ? `<div class="quote ${quoteClass}">${escapeHtml(s.subtitle)}</div>` : ''}
+          `;
         } else {
-          bodyHtml =
-            '<h1>' + escapeHtml(item.title) + '</h1>' +
-            '<div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
+          bodyHtml = `
+            <h1>${escapeHtml(s.title)}</h1>
+            <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+          `;
         }
 
-        html +=
-          '<div class="slide ' + (hasImage ? '' : 'no-image') + '" style="' + bg + '">' +
-            '<div class="content">' +
-              '<div class="badge ' + badgeClass + '">' + badgeText + '</div>' +
-              bodyHtml +
-            '</div>' +
-          '</div>';
-      }
-
-      box.innerHTML = html;
+        return `
+          <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
+            <div class="overlay"></div>
+            <div class="content">
+              <div class="badge ${badgeClass}">${badgeText}</div>
+              ${bodyHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     function play() {
       clearTimeout(timer);
       timer = null;
 
-      if (!slides.length) return;
+      if (!currentSlides.length) return;
 
-      var els = document.querySelectorAll('.slide');
+      const els = document.querySelectorAll('.slide');
+      els.forEach(el => el.classList.remove('active'));
 
-      for (var i = 0; i < els.length; i++) {
-        els[i].classList.remove('active');
-      }
-
-      if (!els[current]) {
-        current = 0;
-      }
-
+      if (!els[current]) current = 0;
       els[current].classList.add('active');
 
-      var duration = Number(slides[current].duration || 12) * 1000;
+      const duration = Number(currentSlides[current].duration || 12) * 1000;
 
       timer = setTimeout(function() {
-        current = (current + 1) % slides.length;
+        current = (current + 1) % currentSlides.length;
         play();
       }, duration);
     }
 
     function updateClock() {
-      var now = new Date();
-
+      const now = getAccurateTime();
       document.getElementById('clock').textContent =
         now.toLocaleString('zh-TW', {
           month: '2-digit',
@@ -453,38 +446,24 @@
           hour: '2-digit',
           minute: '2-digit'
         });
-
-      buildSlides();
+        
+      checkAndRebuildSlides(false);
     }
 
     function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
-
     function escapeAttr(str) {
-      return String(str || '')
-        .replace(/'/g, '%27')
-        .replace(/"/g, '%22');
-    }
-
-    function trimText(str) {
-      return String(str || '').replace(/^\s+|\s+$/g, '');
+      return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22');
     }
 
     updateClock();
     setInterval(updateClock, 10000);
 
     loadData();
-    setInterval(loadData, 30 * 1000);
+    setInterval(loadData, 30 * 1000); // 維持 30 秒抓一次，但有記憶體攔截，不會卡
 
-    setInterval(function() {
-      location.reload();
-    }, 60 * 60 * 1000);
+    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
