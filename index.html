@@ -5,7 +5,7 @@
   <title>Haidian Hidden Library</title>
   <style>
     /* 引入高質感字體 Noto Sans TC */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
 
     html, body {
       margin: 0;
@@ -50,7 +50,7 @@
       width: 100%;
       height: 100%;
       opacity: 0;
-      transition: opacity 1s ease;
+      transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
       background-size: contain;
       background-position: center;
       background-repeat: no-repeat;
@@ -62,60 +62,115 @@
       z-index: 2;
     }
 
+    /* 沒有圖片時的漸層底色，增加一點深度 */
     .slide.no-image {
-      background: linear-gradient(135deg, #263238, #1565c0);
+      background: radial-gradient(circle at top right, #1a2a6c, #112b3c, #000000);
     }
 
-    .overlay {
-      display: none;
-    }
-
-    /* 加入上浮淡入動畫的卡片 */
+    /* 🔥 升級 1：毛玻璃擬物化質感 (Glassmorphism) */
     .content {
       position: absolute;
       left: 6vw;
       bottom: 8vh;
       z-index: 25;
-      background: rgba(0,0,0,.65);
-      padding: 12px 16px 14px;
-      border-radius: 12px;
+      /* 半透明黑底 + 強烈模糊效果 */
+      background: rgba(15, 15, 15, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      /* 邊緣打光，增加立體感 */
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow: 0 12px 40px rgba(0,0,0, 0.6);
+      
+      padding: 24px 28px;
+      border-radius: 16px;
       box-sizing: border-box;
-      max-width: 40vw;
+      max-width: 45vw;
       
       opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(30px);
+      transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
     }
 
     .slide.active .content {
       opacity: 1;
       transform: translateY(0);
-      transition-delay: 0.3s;
+      transition-delay: 0.4s;
     }
 
+    /* 標籤視覺 */
     .badge {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
-      background: #00bcd4;
-      font-size: 18px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 16px;
       font-weight: 900;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
+      margin-bottom: 16px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
+    .badge-post { background: linear-gradient(135deg, #00bcd4, #008ba3); color: #fff; }
+    .badge-breaking { background: linear-gradient(135deg, #f44336, #d32f2f); color: #fff; }
+    .badge-volunteer { background: linear-gradient(135deg, #ff9800, #f57c00); color: #fff; }
+    .badge-student { background: linear-gradient(135deg, #4caf50, #388e3c); color: #fff; }
 
+    /* 一般文章的標題與副標題 */
     h1 {
-      font-size: 30px;
-      line-height: 1.25;
-      margin: 0 0 6px;
+      font-size: 34px;
+      line-height: 1.3;
+      margin: 0 0 10px;
       font-weight: 900;
+      letter-spacing: 0.5px;
     }
 
     .subtitle {
       font-size: 20px;
-      line-height: 1.35;
+      line-height: 1.5;
+      font-weight: 400;
+      color: #e0e0e0;
+    }
+
+    /* 🔥 升級 2：志工專屬的「圓角姓名標籤排版 (Name Chips)」 */
+    .name-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .name-chip {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 8px 18px;
+      border-radius: 50px;
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    
+    .name-chip .icon {
+      font-size: 20px;
+      opacity: 0.9;
+    }
+
+    /* 🔥 升級 3：志工專屬的引言設計 (Quote) */
+    .quote {
+      font-size: 22px;
+      line-height: 1.5;
       font-weight: 500;
-      opacity: .92;
+      color: #f5f5f5;
+      border-left: 4px solid #ff9800;
+      padding-left: 16px;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    .quote-student {
+      border-left-color: #4caf50;
     }
 
     #marqueeWrap {
@@ -123,19 +178,20 @@
       left: 0;
       right: 0;
       bottom: 0;
-      height: 48px;
+      height: 52px;
       z-index: 30;
-      background: rgba(0,0,0,.82);
+      background: rgba(0,0,0,.85);
       overflow: hidden;
       display: flex;
       align-items: center;
-      border-top: 2px solid rgba(255,255,255,.25);
+      border-top: 1px solid rgba(255,255,255,.15);
     }
 
     #marquee {
       white-space: nowrap;
       font-size: 28px;
-      font-weight: 800;
+      font-weight: 700;
+      letter-spacing: 1px;
       padding-left: 100%;
       animation: marquee 28s linear infinite;
     }
@@ -147,10 +203,10 @@
       height: 100%;
       box-sizing: border-box;
       padding: 70px;
-      font-size: 48px;
+      font-size: 40px;
       line-height: 1.6;
       text-align: center;
-      background: linear-gradient(135deg, #263238, #1565c0);
+      background: radial-gradient(circle at center, #263238, #000000);
     }
 
     @keyframes marquee {
@@ -175,12 +231,20 @@
   </div>
 
   <script>
-    // 你的 API 網址
     const GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    let slides = [];
+    let rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
+    let currentSlides = [];
+    let currentVolsCache = ''; 
     let current = 0;
     let timer = null;
+
+    let serverTimeBase = Date.now();
+    let localTimeAtSync = performance.now();
+
+    function getAccurateTime() {
+      return new Date(serverTimeBase + (performance.now() - localTimeAtSync));
+    }
 
     function loadData() {
       const oldScript = document.getElementById('jsonpScript');
@@ -193,74 +257,143 @@
     }
 
     function handleData(data) {
-      const rawSlides = data.slides || [];
+      if (data.serverTime) {
+        serverTimeBase = data.serverTime;
+        localTimeAtSync = performance.now();
+      }
+
+      rawData.slides = data.slides || [];
+      rawData.volunteers = data.volunteers || [];
+      rawData.studentVols = data.studentVols || [];
       
-      // 1. 【高頻率穿插邏輯】將「號外」與「一般文章」分開
-      const breakingNews = rawSlides.filter(s => s.type === 'breaking');
-      const posts = rawSlides.filter(s => s.type === 'post');
+      document.getElementById('marquee').textContent = data.marquee || 'Hidden below, growing beyond.';
+
+      checkAndRebuildSlides(true);
+    }
+
+    function checkAndRebuildSlides(forceRebuild = false) {
+      if (!rawData.slides.length && !rawData.volunteers.length && !rawData.studentVols.length) return;
+
+      const now = getAccurateTime();
+      const day = now.getDay(); 
+      const mins = now.getHours() * 60 + now.getMinutes(); 
+
+      const activeVols = rawData.volunteers.filter(v => 
+        v.dayOfWeek === day && mins >= v.startMins && mins <= v.endMins
+      );
       
+      const activeStudents = rawData.studentVols.filter(v => v.dayOfWeek === day);
+
+      const volSignature = JSON.stringify(activeVols) + JSON.stringify(activeStudents);
+      
+      if (!forceRebuild && volSignature === currentVolsCache) {
+        return; 
+      }
+      currentVolsCache = volSignature;
+
+      const posts = rawData.slides.filter(s => s.type === 'post');
+      const breaking = rawData.slides.filter(s => s.type === 'breaking');
+
+      // 拔除原本的 ⭐ 符號，保留純淨名字讓前端去切割
+      const formattedVols = activeVols.map(v => ({
+        type: 'volunteer',
+        title: v.name, 
+        subtitle: v.phrase,
+        image: v.image,
+        duration: v.duration
+      }));
+
+      const formattedStudents = activeStudents.map(v => ({
+        type: 'studentVol',
+        title: v.classStr + ' ' + v.name,
+        subtitle: '圖書室小志工，為您服務！',
+        image: v.image,
+        duration: v.duration
+      }));
+
+      const specials = [...breaking, ...formattedVols, ...formattedStudents];
       let mixedSlides = [];
 
-      if (breakingNews.length > 0 && posts.length > 0) {
-        let breakIndex = 0;
+      if (posts.length > 0 && specials.length > 0) {
+        let sIdx = 0;
         posts.forEach(post => {
           mixedSlides.push(post);
-          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
-          breakIndex++;
+          mixedSlides.push(specials[sIdx % specials.length]);
+          sIdx++;
         });
+      } else if (specials.length > 0) {
+        mixedSlides = specials;
       } else {
-        mixedSlides = rawSlides;
+        mixedSlides = posts;
       }
 
-      slides = mixedSlides;
+      currentSlides = mixedSlides;
+      if (current >= currentSlides.length) current = 0;
 
-      document.getElementById('marquee').textContent =
-        data.marquee || 'Hidden below, growing beyond.';
-
-      // 2. 【修復重整歸零問題】確保 current 不會因為資料變少而出界
-      if (current >= slides.length) {
-        current = 0;
-      }
-
-      // 重新渲染畫面
       renderSlides();
-      
-      // 讓當前畫面保持啟動狀態，不會閃屏
       const els = document.querySelectorAll('.slide');
       els.forEach(el => el.classList.remove('active'));
       if (els[current]) {
         els[current].classList.add('active');
       }
 
-      // 3. 如果計時器沒在跑（初次載入），才呼叫 play 啟動輪播
-      play();
+      if (!timer) play();
     }
 
     function renderSlides() {
       const box = document.getElementById('slides');
 
-      if (!slides.length) {
-        box.innerHTML =
-          '<div class="empty">目前沒有可播放的圖書室消息<br>請確認 Google 試算表資料</div>';
+      if (!currentSlides.length) {
+        box.innerHTML = '<div class="empty">目前沒有可播放的消息<br>請確認 Google 試算表資料</div>';
         return;
       }
 
-      // 完全乾淨的渲染邏輯，拔除 iframe 與 link 判斷
-      box.innerHTML = slides.map(function(s) {
+      box.innerHTML = currentSlides.map(function(s) {
         const hasImage = !!s.image;
-        const bg = hasImage
-          ? "background-image:url('" + escapeAttr(s.image) + "')"
-          : "";
+        const bg = hasImage ? "background-image:url('" + escapeAttr(s.image) + "')" : "";
 
-        let badgeText = s.type === 'breaking' ? '號外插播' : '圖書室消息';
+        let badgeText = '圖書室消息';
+        let badgeClass = 'badge-post';
+        let bodyHtml = '';
+        
+        if (s.type === 'breaking') { 
+          badgeText = '號外插播'; 
+          badgeClass = 'badge-breaking'; 
+        } else if (s.type === 'volunteer') { 
+          badgeText = '今日值班志工'; 
+          badgeClass = 'badge-volunteer'; 
+        } else if (s.type === 'studentVol') { 
+          badgeText = '今日小志工'; 
+          badgeClass = 'badge-student'; 
+        }
+
+        // 🔥 升級：如果判斷是志工，啟用「自動姓名切割與陣列排版」
+        if (s.type === 'volunteer' || s.type === 'studentVol') {
+          // 支援用 換行(\n)、頓號(、)、半形逗號(,) 全形逗號(，) 或 空白 來分隔多位志工
+          let names = String(s.title).split(/[\n、,， ]+/).map(n => n.trim()).filter(Boolean);
+          
+          let icon = s.type === 'volunteer' ? '⭐' : '🌟';
+          let chips = names.map(n => `<div class="name-chip"><span class="icon">${icon}</span>${escapeHtml(n)}</div>`).join('');
+          let quoteClass = s.type === 'studentVol' ? 'quote-student' : '';
+
+          bodyHtml = `
+            <div class="name-grid">${chips}</div>
+            ${s.subtitle ? `<div class="quote ${quoteClass}">${escapeHtml(s.subtitle)}</div>` : ''}
+          `;
+        } else {
+          // 一般文章排版維持原狀
+          bodyHtml = `
+            <h1>${escapeHtml(s.title)}</h1>
+            <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+          `;
+        }
 
         return `
           <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
             <div class="overlay"></div>
             <div class="content">
-              <div class="badge">${badgeText}</div>
-              <h1>${escapeHtml(s.title)}</h1>
-              <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
+              <div class="badge ${badgeClass}">${badgeText}</div>
+              ${bodyHtml}
             </div>
           </div>
         `;
@@ -268,10 +401,10 @@
     }
 
     function play() {
-  clearTimeout(timer);
-  timer = null; // 👈 加這行（避免殘留）
+      clearTimeout(timer);
+      timer = null;
 
-  if (!slides.length) return;
+      if (!currentSlides.length) return;
 
       const els = document.querySelectorAll('.slide');
       els.forEach(el => el.classList.remove('active'));
@@ -279,17 +412,16 @@
       if (!els[current]) current = 0;
       els[current].classList.add('active');
 
-      // 純粹的輪播計時邏輯，拔除 window.location.href 跳轉
-      const duration = Number(slides[current].duration || 12) * 1000;
+      const duration = Number(currentSlides[current].duration || 12) * 1000;
 
       timer = setTimeout(function() {
-        current = (current + 1) % slides.length;
+        current = (current + 1) % currentSlides.length;
         play();
       }, duration);
     }
 
     function updateClock() {
-      const now = new Date();
+      const now = getAccurateTime();
       document.getElementById('clock').textContent =
         now.toLocaleString('zh-TW', {
           month: '2-digit',
@@ -297,34 +429,24 @@
           hour: '2-digit',
           minute: '2-digit'
         });
+        
+      checkAndRebuildSlides(false);
     }
 
     function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
-
     function escapeAttr(str) {
-      return String(str || '')
-        .replace(/'/g, '%27')
-        .replace(/"/g, '%22');
+      return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22');
     }
 
     updateClock();
     setInterval(updateClock, 10000);
 
-    // 每 30 秒向 GAS 拿一次最新資料 (無縫更新)
     loadData();
-    setInterval(loadData, 30 * 1000);
+    setInterval(loadData, 300 * 1000); // 5分鐘一次，極度省 GAS 效能
 
-    // 每 1 小時徹底重整一次網頁 (釋放電視記憶體)
-    setInterval(function() {
-      location.reload();
-    }, 60 * 60 * 1000);
+    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
