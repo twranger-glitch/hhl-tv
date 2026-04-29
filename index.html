@@ -4,22 +4,22 @@
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
+
     html, body {
       margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
       background: #000;
-      font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
     }
 
     #screen {
-      position: absolute;
-      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      position: relative;
       overflow: hidden;
       color: white;
       background: #000;
@@ -35,7 +35,7 @@
       justify-content: space-between;
       font-size: 28px;
       font-weight: 700;
-      text-shadow: 0 2px 4px #000;
+      text-shadow: 0 2px 8px rgba(0,0,0,.8);
     }
 
     #slides {
@@ -46,11 +46,14 @@
 
     .slide {
       position: absolute;
-      inset: 0;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
+
       opacity: 0;
-      transition: opacity 0.8s linear;
+      transition: opacity 1s ease;
+
       background-size: contain;
       background-position: center;
       background-repeat: no-repeat;
@@ -63,96 +66,111 @@
     }
 
     .slide.no-image {
-      background: #071827;
+      background: linear-gradient(135deg, #263238, #1565c0);
     }
 
     .content {
       position: absolute;
       left: 6vw;
-      bottom: 12vh;
+      bottom: 11vh;
       z-index: 25;
-      background: rgba(0, 0, 0, 0.78);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      padding: 24px 32px;
-      border-radius: 14px;
+
+      background: rgba(0,0,0,.68);
+      padding: 14px 18px 16px;
+      border-radius: 12px;
       box-sizing: border-box;
-      max-width: 50vw;
+      max-width: 46vw;
+
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.8s ease;
+    }
+
+    .slide.active .content {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .badge {
       display: inline-block;
-      padding: 6px 14px;
-      border-radius: 6px;
+      padding: 4px 12px;
+      border-radius: 999px;
       font-size: 18px;
       font-weight: 900;
-      margin-bottom: 20px;
-      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+      background: #00bcd4;
+      color: #fff;
     }
 
-    .badge-post { background: #008ba3; color: #fff; }
-    .badge-breaking { background: #d32f2f; color: #fff; }
-    .badge-volunteer { background: #f57c00; color: #fff; }
-    .badge-student { background: #388e3c; color: #fff; }
+    .badge-breaking {
+      background: #d32f2f;
+    }
+
+    .badge-volunteer {
+      background: #f57c00;
+    }
+
+    .badge-student {
+      background: #388e3c;
+    }
 
     h1 {
-      font-size: 34px;
-      line-height: 1.3;
-      margin: 0 0 10px;
+      font-size: 30px;
+      line-height: 1.25;
+      margin: 0 0 6px;
       font-weight: 900;
     }
 
     .subtitle {
       font-size: 20px;
-      line-height: 1.5;
-      color: #e0e0e0;
+      line-height: 1.35;
+      font-weight: 500;
+      opacity: .92;
     }
 
     .name-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      margin-bottom: 20px;
+      display: block;
+      margin-bottom: 12px;
     }
 
     .name-chip {
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 10px 28px 10px 20px;
+      display: block;
+      width: auto;
+      margin-bottom: 10px;
+      padding: 8px 18px 8px 14px;
       border-radius: 10px;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.18);
       font-size: 26px;
-      font-weight: 700;
-      color: #ffffff;
-      display: flex;
-      align-items: center;
-      width: fit-content;
+      font-weight: 800;
+      line-height: 1.3;
+      white-space: nowrap;
     }
 
-    .name-chip .icon {
+    .name-icon {
+      display: inline-block;
       width: 38px;
-      min-width: 38px;
       margin-right: 18px;
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 22px;
+      text-align: center;
     }
 
     .class-prefix {
-      font-size: 0.85em;
-      opacity: 0.75;
+      display: inline-block;
       margin-right: 14px;
-      font-weight: 500;
+      font-size: 22px;
+      opacity: .8;
+      font-weight: 700;
     }
 
     .quote {
       font-size: 22px;
-      line-height: 1.5;
+      line-height: 1.45;
       font-weight: 500;
       color: #f5f5f5;
       border-left: 4px solid #ff9800;
-      padding-left: 16px;
-      margin-top: 10px;
-      font-style: italic;
+      padding-left: 14px;
+      margin-top: 8px;
     }
 
     .quote-student {
@@ -163,36 +181,27 @@
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 18px;
-      height: 52px;
+      bottom: 12px;
+      height: 48px;
       z-index: 30;
-      background: rgba(0,0,0,.9);
+      background: rgba(0,0,0,.86);
       overflow: hidden;
-      border-top: 1px solid rgba(255,255,255,.15);
-      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      border-top: 2px solid rgba(255,255,255,.25);
     }
 
     #marquee {
-      position: absolute;
-      top: 0;
-      left: 0;
-      height: 52px;
-      line-height: 52px;
       white-space: nowrap;
       font-size: 28px;
-      font-weight: 700;
-      letter-spacing: 1px;
-      padding-left: 100vw;
-      animation: marqueeMove 36s linear infinite;
+      font-weight: 800;
+      padding-left: 100%;
+      animation: marquee 30s linear infinite;
     }
 
-    @keyframes marqueeMove {
-      0% {
-        transform: translateX(0);
-      }
-      100% {
-        transform: translateX(-100%);
-      }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
     }
 
     .empty {
@@ -202,10 +211,10 @@
       height: 100%;
       box-sizing: border-box;
       padding: 70px;
-      font-size: 40px;
+      font-size: 48px;
       line-height: 1.6;
       text-align: center;
-      background: #111;
+      background: linear-gradient(135deg, #263238, #1565c0);
     }
   </style>
 </head>
@@ -225,202 +234,217 @@
   </div>
 
   <script>
-    const GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
+    var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    let rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
-    let currentSlides = [];
-    let currentVolsCache = '';
-    let current = 0;
-    let timer = null;
+    var rawData = {
+      slides: [],
+      volunteers: [],
+      studentVols: [],
+      marquee: ''
+    };
 
-    let serverTimeBase = Date.now();
-    let localTimeAtSync = performance.now();
-
-    function getAccurateTime() {
-      return new Date(serverTimeBase + (performance.now() - localTimeAtSync));
-    }
+    var slides = [];
+    var current = 0;
+    var timer = null;
 
     function loadData() {
-      const oldScript = document.getElementById('jsonpScript');
-      if (oldScript) oldScript.remove();
+      var oldScript = document.getElementById('jsonpScript');
+      if (oldScript) {
+        oldScript.parentNode.removeChild(oldScript);
+      }
 
-      const script = document.createElement('script');
+      var script = document.createElement('script');
       script.id = 'jsonpScript';
-      script.src = GAS_API_URL + '?callback=handleData&t=' + Date.now();
+      script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
       document.body.appendChild(script);
     }
 
     function handleData(data) {
-      if (data.serverTime) {
-        serverTimeBase = data.serverTime;
-        localTimeAtSync = performance.now();
-      }
-
       rawData.slides = data.slides || [];
       rawData.volunteers = data.volunteers || [];
       rawData.studentVols = data.studentVols || [];
+      rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
 
-      setMarquee(data.marquee || 'Hidden below, growing beyond.');
-      checkAndRebuildSlides(true);
-    }
+      document.getElementById('marquee').textContent = rawData.marquee;
 
-    function setMarquee(text) {
-      const marquee = document.getElementById('marquee');
-      marquee.style.animation = 'none';
-      marquee.textContent = text;
+      buildSlides();
 
-      setTimeout(function () {
-        marquee.style.animation = 'marqueeMove 36s linear infinite';
-      }, 50);
-    }
-
-    function checkAndRebuildSlides(forceRebuild) {
-      if (!rawData.slides.length && !rawData.volunteers.length && !rawData.studentVols.length) return;
-
-      const now = getAccurateTime();
-      const day = now.getDay();
-      const mins = now.getHours() * 60 + now.getMinutes();
-
-      const activeVols = rawData.volunteers.filter(v =>
-        v.dayOfWeek === day && mins >= v.startMins && mins <= v.endMins
-      );
-
-      const activeStudents = rawData.studentVols.filter(v => v.dayOfWeek === day);
-
-      const volSignature = JSON.stringify(activeVols) + JSON.stringify(activeStudents);
-
-      if (!forceRebuild && volSignature === currentVolsCache) return;
-
-      currentVolsCache = volSignature;
-
-      const posts = rawData.slides.filter(s => s.type === 'post');
-      const breaking = rawData.slides.filter(s => s.type === 'breaking');
-
-      const formattedVols = activeVols.map(v => ({
-        type: 'volunteer',
-        title: v.name,
-        subtitle: v.phrase,
-        image: v.image,
-        duration: v.duration
-      }));
-
-      const formattedStudents = activeStudents.map(v => ({
-        type: 'studentVol',
-        title: v.name,
-        classStr: v.classStr,
-        subtitle: v.phrase || '圖書室小志工，為您服務！',
-        image: v.image,
-        duration: v.duration
-      }));
-
-      currentSlides = [...breaking, ...posts, ...formattedVols, ...formattedStudents];
-
-      if (current >= currentSlides.length) current = 0;
+      if (current >= slides.length) {
+        current = 0;
+      }
 
       renderSlides();
+      play();
+    }
 
-      const els = document.querySelectorAll('.slide');
-      els.forEach(el => el.classList.remove('active'));
+    function buildSlides() {
+      var now = new Date();
+      var day = now.getDay();
+      var mins = now.getHours() * 60 + now.getMinutes();
 
-      if (els[current]) els[current].classList.add('active');
+      var rawSlides = rawData.slides || [];
+      var breakingNews = [];
+      var posts = [];
 
-      if (!timer) play();
+      for (var i = 0; i < rawSlides.length; i++) {
+        if (rawSlides[i].type === 'breaking') {
+          breakingNews.push(rawSlides[i]);
+        } else {
+          posts.push(rawSlides[i]);
+        }
+      }
+
+      var mixedSlides = [];
+
+      if (breakingNews.length > 0 && posts.length > 0) {
+        var breakIndex = 0;
+        for (var p = 0; p < posts.length; p++) {
+          mixedSlides.push(posts[p]);
+          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
+          breakIndex++;
+        }
+      } else {
+        mixedSlides = rawSlides.slice(0);
+      }
+
+      var activeVols = [];
+      for (var v = 0; v < rawData.volunteers.length; v++) {
+        var item = rawData.volunteers[v];
+        if (item.dayOfWeek === day && mins >= item.startMins && mins <= item.endMins) {
+          activeVols.push({
+            type: 'volunteer',
+            title: item.name,
+            subtitle: item.phrase,
+            image: item.image,
+            duration: item.duration
+          });
+        }
+      }
+
+      var activeStudents = [];
+      for (var s = 0; s < rawData.studentVols.length; s++) {
+        var stu = rawData.studentVols[s];
+        if (stu.dayOfWeek === day) {
+          activeStudents.push({
+            type: 'studentVol',
+            title: stu.name,
+            classStr: stu.classStr,
+            subtitle: stu.phrase || '圖書室小志工，為您服務！',
+            image: stu.image,
+            duration: stu.duration
+          });
+        }
+      }
+
+      slides = mixedSlides.concat(activeVols).concat(activeStudents);
     }
 
     function renderSlides() {
-      const box = document.getElementById('slides');
+      var box = document.getElementById('slides');
 
-      if (!currentSlides.length) {
-        box.innerHTML = '<div class="empty">目前沒有可播放的消息<br>請確認 Google 試算表資料</div>';
+      if (!slides.length) {
+        box.innerHTML =
+          '<div class="empty">目前沒有可播放的圖書室消息<br>請確認 Google 試算表資料</div>';
         return;
       }
 
-      box.innerHTML = currentSlides.map(function(s) {
-        const hasImage = !!s.image;
-        const bg = hasImage ? "background-image:url('" + escapeAttr(s.image) + "')" : "";
+      var html = '';
 
-        let badgeText = '圖書室消息';
-        let badgeClass = 'badge-post';
-        let bodyHtml = '';
+      for (var i = 0; i < slides.length; i++) {
+        var item = slides[i];
+        var hasImage = !!item.image;
+        var bg = hasImage ? "background-image:url('" + escapeAttr(item.image) + "')" : "";
 
-        if (s.type === 'breaking') {
+        var badgeText = '圖書室消息';
+        var badgeClass = '';
+
+        if (item.type === 'breaking') {
           badgeText = '號外插播';
           badgeClass = 'badge-breaking';
-        } else if (s.type === 'volunteer') {
+        } else if (item.type === 'volunteer') {
           badgeText = '今日值班志工';
           badgeClass = 'badge-volunteer';
-        } else if (s.type === 'studentVol') {
+        } else if (item.type === 'studentVol') {
           badgeText = '今日小志工';
           badgeClass = 'badge-student';
         }
 
-        if (s.type === 'volunteer' || s.type === 'studentVol') {
-          const names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
+        var bodyHtml = '';
 
-          const iconHtml = s.type === 'volunteer'
-            ? '<i class="fa-solid fa-hand-holding-heart" style="color:#ffb74d;"></i>'
-            : '<i class="fa-solid fa-book-reader" style="color:#81c784;"></i>';
+        if (item.type === 'volunteer' || item.type === 'studentVol') {
+          var names = String(item.title || '').split(/[\n、,，]+/);
+          var chips = '';
 
-          const chips = names.map(n => {
-            const classPrefix = (s.type === 'studentVol' && s.classStr)
-              ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>`
-              : '';
+          for (var n = 0; n < names.length; n++) {
+            var name = trimText(names[n]);
+            if (!name) continue;
 
-            return `
-              <div class="name-chip">
-                <span class="icon">${iconHtml}</span>
-                ${classPrefix}
-                <span>${escapeHtml(n)}</span>
-              </div>
-            `;
-          }).join('');
+            var icon = item.type === 'volunteer' ? '❤' : '📖';
+            var classText = '';
 
-          const quoteClass = s.type === 'studentVol' ? 'quote-student' : '';
+            if (item.type === 'studentVol' && item.classStr) {
+              classText = '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>';
+            }
 
-          bodyHtml = `
-            <div class="name-grid">${chips}</div>
-            ${s.subtitle ? `<div class="quote ${quoteClass}">${escapeHtml(s.subtitle)}</div>` : ''}
-          `;
+            chips +=
+              '<div class="name-chip">' +
+                '<span class="name-icon">' + icon + '</span>' +
+                classText +
+                '<span>' + escapeHtml(name) + '</span>' +
+              '</div>';
+          }
+
+          var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
+
+          bodyHtml =
+            '<div class="name-grid">' + chips + '</div>' +
+            (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
         } else {
-          bodyHtml = `
-            <h1>${escapeHtml(s.title)}</h1>
-            <div class="subtitle">${escapeHtml(s.subtitle || '')}</div>
-          `;
+          bodyHtml =
+            '<h1>' + escapeHtml(item.title) + '</h1>' +
+            '<div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
         }
 
-        return `
-          <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
-            <div class="content">
-              <div class="badge ${badgeClass}">${badgeText}</div>
-              ${bodyHtml}
-            </div>
-          </div>
-        `;
-      }).join('');
+        html +=
+          '<div class="slide ' + (hasImage ? '' : 'no-image') + '" style="' + bg + '">' +
+            '<div class="content">' +
+              '<div class="badge ' + badgeClass + '">' + badgeText + '</div>' +
+              bodyHtml +
+            '</div>' +
+          '</div>';
+      }
+
+      box.innerHTML = html;
     }
 
     function play() {
       clearTimeout(timer);
       timer = null;
 
-      if (!currentSlides.length) return;
+      if (!slides.length) return;
 
-      const els = document.querySelectorAll('.slide');
-      els.forEach(el => el.classList.remove('active'));
+      var els = document.querySelectorAll('.slide');
 
-      if (!els[current]) current = 0;
+      for (var i = 0; i < els.length; i++) {
+        els[i].classList.remove('active');
+      }
+
+      if (!els[current]) {
+        current = 0;
+      }
+
       els[current].classList.add('active');
 
-      const duration = Number(currentSlides[current].duration || 12) * 1000;
+      var duration = Number(slides[current].duration || 12) * 1000;
 
       timer = setTimeout(function() {
-        current = (current + 1) % currentSlides.length;
+        current = (current + 1) % slides.length;
         play();
       }, duration);
     }
 
     function updateClock() {
-      const now = getAccurateTime();
+      var now = new Date();
 
       document.getElementById('clock').textContent =
         now.toLocaleString('zh-TW', {
@@ -430,7 +454,7 @@
           minute: '2-digit'
         });
 
-      checkAndRebuildSlides(false);
+      buildSlides();
     }
 
     function escapeHtml(str) {
@@ -448,15 +472,19 @@
         .replace(/"/g, '%22');
     }
 
-    updateClock();
-    loadData();
+    function trimText(str) {
+      return String(str || '').replace(/^\s+|\s+$/g, '');
+    }
 
+    updateClock();
     setInterval(updateClock, 10000);
-    setInterval(loadData, 300 * 1000);
+
+    loadData();
+    setInterval(loadData, 30 * 1000);
 
     setInterval(function() {
-      location.href = location.pathname + '?t=' + Date.now();
-    }, 10 * 60 * 1000);
+      location.reload();
+    }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
