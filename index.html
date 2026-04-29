@@ -10,8 +10,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
+    /* 確保螢幕完全鎖定，不被任何工具列擠壓 */
     html, body {
       margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -20,9 +22,8 @@
     }
 
     #screen {
-      width: 100vw;
-      height: 100vh;
-      position: relative;
+      position: absolute;
+      inset: 0; 
       overflow: hidden;
       color: white;
       background: #000;
@@ -172,13 +173,13 @@
       border-left-color: #4caf50;
     }
 
-    /* 🔥 終極跑馬燈防爆框寫法：物理絕對定位 */
+    /* 🔥 終極跑馬燈修復：暴力釘死定位法 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 0;
-      height: 64px; /* 黑框高度 64px */
+      height: 64px; /* 加高黑框，給予充分空間 */
       z-index: 30;
       background: rgba(0,0,0,.85);
       overflow: hidden;
@@ -186,12 +187,12 @@
     }
 
     #marquee {
-      position: absolute; /* 🔥 放棄 Flexbox，強制物理定位 */
-      top: 14px; /* 🔥 硬性規定距離頂部 14px，保證上下置中 */
+      position: absolute; /* 🔥 脫離排版，直接使用絕對定位 */
+      top: 12px;          /* 🔥 硬性規定距離黑框頂部 12px！這句是防爆框的核心 */
       left: 0;
       white-space: nowrap;
-      font-size: 30px; 
-      line-height: 1; 
+      font-size: 30px;
+      line-height: normal; /* 放棄所有 line-height 的干擾 */
       font-weight: 700;
       letter-spacing: 1px;
       padding-left: 100vw;
