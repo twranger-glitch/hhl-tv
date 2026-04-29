@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
   
-  <!-- 引入高質感字體 Noto Sans TC -->
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
   
   <!-- 🌟 導入業界標準 FontAwesome 向量圖標庫 -->
@@ -154,11 +153,10 @@
       opacity: 1;
     }
 
-    /* 班級專屬微調：略小、微透明 */
     .class-prefix {
       font-size: 0.85em;
       opacity: 0.75;
-      margin-right: -4px; /* 拉近跟名字的距離 */
+      margin-right: -4px;
       font-weight: 500;
     }
 
@@ -176,27 +174,28 @@
       border-left-color: #4caf50;
     }
 
+    /* 🔥 修正：跑馬燈絕對不會爆框的完美寫法 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 0;
       height: 52px;
+      line-height: 52px; /* 取代 flex 的垂直置中法 */
       z-index: 30;
       background: rgba(0,0,0,.85);
       overflow: hidden;
-      display: flex;
-      align-items: center;
+      white-space: nowrap;
       border-top: 1px solid rgba(255,255,255,.15);
     }
 
     #marquee {
-      white-space: nowrap;
+      display: inline-block;
       font-size: 28px;
       font-weight: 700;
       letter-spacing: 1px;
-      padding-left: 100%;
-      animation: marquee 28s linear infinite;
+      padding-left: 100vw; /* 讓文字精準從畫面最右側外緣出發 */
+      animation: marquee 32s linear infinite; /* 稍微放慢一點點速度 */
     }
 
     .empty {
@@ -213,8 +212,8 @@
     }
 
     @keyframes marquee {
-      from { transform: translateX(0); }
-      to { transform: translateX(-100%); }
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
     }
   </style>
 </head>
@@ -305,12 +304,11 @@
         duration: v.duration
       }));
 
-      // 🔥 修正：把班級(classStr)獨立傳遞，不跟名字混在一起
       const formattedStudents = activeStudents.map(v => ({
         type: 'studentVol',
         title: v.name, 
         classStr: v.classStr, 
-        subtitle: '圖書室小志工，為您服務！',
+        subtitle: v.phrase || '圖書室小志工，為您服務！', 
         image: v.image,
         duration: v.duration
       }));
@@ -359,13 +357,12 @@
         if (s.type === 'volunteer' || s.type === 'studentVol') {
           let names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
           
-          // 🔥 導入 FontAwesome 高質感圖標
+          // 🔥 修正：更換為高質感的「手捧愛心」志工圖標
           let iconHtml = s.type === 'volunteer' 
-            ? '<i class="fa-solid fa-user-check" style="color: #ffb74d;"></i>' 
+            ? '<i class="fa-solid fa-hand-holding-heart" style="color: #ffb74d;"></i>' 
             : '<i class="fa-solid fa-book-reader" style="color: #81c784;"></i>';
           
           let chips = names.map(n => {
-            // 如果是小志工且有填寫班級，就把班級塞到每個人名字前面
             let classPrefix = (s.type === 'studentVol' && s.classStr) 
               ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>` 
               : '';
