@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
-  
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
-  
-  <!-- 🌟 導入業界標準 FontAwesome 向量圖標庫 -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
-    /* 確保螢幕完全鎖定，不被任何工具列擠壓 */
     html, body {
       margin: 0;
       padding: 0;
@@ -23,7 +22,7 @@
 
     #screen {
       position: absolute;
-      inset: 0; 
+      inset: 0;
       overflow: hidden;
       color: white;
       background: #000;
@@ -73,7 +72,7 @@
     .content {
       position: absolute;
       left: 6vw;
-      bottom: 8vh;
+      bottom: 11vh;
       z-index: 25;
       background: rgba(15, 15, 15, 0.65);
       backdrop-filter: blur(16px);
@@ -106,6 +105,7 @@
       letter-spacing: 1.5px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
+
     .badge-post { background: linear-gradient(135deg, #00bcd4, #008ba3); color: #fff; }
     .badge-breaking { background: linear-gradient(135deg, #f44336, #d32f2f); color: #fff; }
     .badge-volunteer { background: linear-gradient(135deg, #ff9800, #f57c00); color: #fff; }
@@ -135,27 +135,32 @@
     .name-chip {
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.2);
-      padding: 10px 24px;
+      padding: 10px 26px 10px 20px;
       border-radius: 10px;
       font-size: 26px;
       font-weight: 700;
       color: #ffffff;
       display: flex;
       align-items: center;
-      gap: 16px;
+      column-gap: 22px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       width: fit-content;
     }
-    
+
     .name-chip .icon {
+      width: 34px;
+      min-width: 34px;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
       font-size: 22px;
       opacity: 1;
+      margin-right: 2px;
     }
 
     .class-prefix {
       font-size: 0.85em;
       opacity: 0.75;
-      margin-right: -4px;
       font-weight: 500;
     }
 
@@ -169,34 +174,46 @@
       margin-top: 10px;
       font-style: italic;
     }
+
     .quote-student {
       border-left-color: #4caf50;
     }
 
-    /* 🔥 終極跑馬燈修復：暴力釘死定位法 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
-      bottom: 0;
-      height: 64px; /* 加高黑框，給予充分空間 */
+      bottom: 16px;
+      height: 54px;
       z-index: 30;
-      background: rgba(0,0,0,.85);
+      background: rgba(0,0,0,.88);
       overflow: hidden;
       border-top: 1px solid rgba(255,255,255,.15);
+      box-sizing: border-box;
+      contain: layout paint;
     }
 
     #marquee {
-      position: absolute; /* 🔥 脫離排版，直接使用絕對定位 */
-      top: 12px;          /* 🔥 硬性規定距離黑框頂部 12px！這句是防爆框的核心 */
+      position: absolute;
       left: 0;
+      top: 0;
+      height: 54px;
+      display: flex;
+      align-items: center;
       white-space: nowrap;
-      font-size: 30px;
-      line-height: normal; /* 放棄所有 line-height 的干擾 */
+      font-size: 28px;
+      line-height: 54px;
       font-weight: 700;
       letter-spacing: 1px;
-      padding-left: 100vw;
-      animation: marquee 32s linear infinite;
+      will-change: transform;
+      transform: translate3d(100vw, 0, 0);
+      backface-visibility: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #marqueeText {
+      display: inline-block;
+      padding-right: 100px;
     }
 
     .empty {
@@ -211,11 +228,6 @@
       text-align: center;
       background: radial-gradient(circle at center, #263238, #000000);
     }
-
-    @keyframes marquee {
-      0% { transform: translateX(0); }
-      100% { transform: translateX(-100%); }
-    }
   </style>
 </head>
 
@@ -229,7 +241,9 @@
     <div id="slides"></div>
 
     <div id="marqueeWrap">
-      <div id="marquee">Hidden below, growing beyond.</div>
+      <div id="marquee">
+        <span id="marqueeText">Hidden below, growing beyond.</span>
+      </div>
     </div>
   </div>
 
@@ -238,12 +252,18 @@
 
     let rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
     let currentSlides = [];
-    let currentVolsCache = ''; 
+    let currentVolsCache = '';
     let current = 0;
     let timer = null;
 
     let serverTimeBase = Date.now();
     let localTimeAtSync = performance.now();
+
+    let marqueeX = 0;
+    let marqueeTextWidth = 0;
+    let marqueeLastTime = 0;
+    let marqueeSpeed = 72;
+    let marqueeRaf = null;
 
     function getAccurateTime() {
       return new Date(serverTimeBase + (performance.now() - localTimeAtSync));
@@ -268,30 +288,68 @@
       rawData.slides = data.slides || [];
       rawData.volunteers = data.volunteers || [];
       rawData.studentVols = data.studentVols || [];
-      
-      document.getElementById('marquee').textContent = data.marquee || 'Hidden below, growing beyond.';
 
+      setMarqueeText(data.marquee || 'Hidden below, growing beyond.');
       checkAndRebuildSlides(true);
     }
+
+    function setMarqueeText(text) {
+      const el = document.getElementById('marqueeText');
+      el.textContent = text;
+      setupMarquee();
+    }
+
+    function setupMarquee() {
+      const wrap = document.getElementById('marqueeWrap');
+      const text = document.getElementById('marqueeText');
+
+      marqueeTextWidth = text.offsetWidth || 1;
+      marqueeX = wrap.clientWidth + 30;
+      marqueeLastTime = performance.now();
+
+      if (!marqueeRaf) {
+        marqueeRaf = requestAnimationFrame(runMarquee);
+      }
+    }
+
+    function runMarquee(now) {
+      const wrap = document.getElementById('marqueeWrap');
+      const marquee = document.getElementById('marquee');
+
+      const dt = Math.min(40, now - marqueeLastTime);
+      marqueeLastTime = now;
+
+      marqueeX -= marqueeSpeed * (dt / 1000);
+
+      if (marqueeX < -marqueeTextWidth - 80) {
+        marqueeX = wrap.clientWidth + 30;
+      }
+
+      marquee.style.transform = 'translate3d(' + marqueeX.toFixed(2) + 'px, 0, 0)';
+      marqueeRaf = requestAnimationFrame(runMarquee);
+    }
+
+    window.addEventListener('resize', setupMarquee);
 
     function checkAndRebuildSlides(forceRebuild = false) {
       if (!rawData.slides.length && !rawData.volunteers.length && !rawData.studentVols.length) return;
 
       const now = getAccurateTime();
-      const day = now.getDay(); 
-      const mins = now.getHours() * 60 + now.getMinutes(); 
+      const day = now.getDay();
+      const mins = now.getHours() * 60 + now.getMinutes();
 
-      const activeVols = rawData.volunteers.filter(v => 
+      const activeVols = rawData.volunteers.filter(v =>
         v.dayOfWeek === day && mins >= v.startMins && mins <= v.endMins
       );
-      
+
       const activeStudents = rawData.studentVols.filter(v => v.dayOfWeek === day);
 
       const volSignature = JSON.stringify(activeVols) + JSON.stringify(activeStudents);
-      
+
       if (!forceRebuild && volSignature === currentVolsCache) {
-        return; 
+        return;
       }
+
       currentVolsCache = volSignature;
 
       const posts = rawData.slides.filter(s => s.type === 'post');
@@ -299,7 +357,7 @@
 
       const formattedVols = activeVols.map(v => ({
         type: 'volunteer',
-        title: v.name, 
+        title: v.name,
         subtitle: v.phrase,
         image: v.image,
         duration: v.duration
@@ -307,9 +365,9 @@
 
       const formattedStudents = activeStudents.map(v => ({
         type: 'studentVol',
-        title: v.name, 
-        classStr: v.classStr, 
-        subtitle: v.phrase || '圖書室小志工，為您服務！', 
+        title: v.name,
+        classStr: v.classStr,
+        subtitle: v.phrase || '圖書室小志工，為您服務！',
         image: v.image,
         duration: v.duration
       }));
@@ -319,8 +377,10 @@
       if (current >= currentSlides.length) current = 0;
 
       renderSlides();
+
       const els = document.querySelectorAll('.slide');
       els.forEach(el => el.classList.remove('active'));
+
       if (els[current]) {
         els[current].classList.add('active');
       }
@@ -343,33 +403,33 @@
         let badgeText = '圖書室消息';
         let badgeClass = 'badge-post';
         let bodyHtml = '';
-        
-        if (s.type === 'breaking') { 
-          badgeText = '號外插播'; 
-          badgeClass = 'badge-breaking'; 
-        } else if (s.type === 'volunteer') { 
-          badgeText = '今日值班志工'; 
-          badgeClass = 'badge-volunteer'; 
-        } else if (s.type === 'studentVol') { 
-          badgeText = '今日小志工'; 
-          badgeClass = 'badge-student'; 
+
+        if (s.type === 'breaking') {
+          badgeText = '號外插播';
+          badgeClass = 'badge-breaking';
+        } else if (s.type === 'volunteer') {
+          badgeText = '今日值班志工';
+          badgeClass = 'badge-volunteer';
+        } else if (s.type === 'studentVol') {
+          badgeText = '今日小志工';
+          badgeClass = 'badge-student';
         }
 
         if (s.type === 'volunteer' || s.type === 'studentVol') {
           let names = String(s.title).split(/[\n、,，]+/).map(n => n.trim()).filter(Boolean);
-          
-          let iconHtml = s.type === 'volunteer' 
-            ? '<i class="fa-solid fa-hand-holding-heart" style="color: #ffb74d;"></i>' 
+
+          let iconHtml = s.type === 'volunteer'
+            ? '<i class="fa-solid fa-hand-holding-heart" style="color: #ffb74d;"></i>'
             : '<i class="fa-solid fa-book-reader" style="color: #81c784;"></i>';
-          
+
           let chips = names.map(n => {
-            let classPrefix = (s.type === 'studentVol' && s.classStr) 
-              ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>` 
+            let classPrefix = (s.type === 'studentVol' && s.classStr)
+              ? `<span class="class-prefix">${escapeHtml(s.classStr)}</span>`
               : '';
-              
-            return `<div class="name-chip"><span class="icon">${iconHtml}</span>${classPrefix}${escapeHtml(n)}</div>`;
+
+            return `<div class="name-chip"><span class="icon">${iconHtml}</span>${classPrefix}<span>${escapeHtml(n)}</span></div>`;
           }).join('');
-          
+
           let quoteClass = s.type === 'studentVol' ? 'quote-student' : '';
 
           bodyHtml = `
@@ -385,7 +445,6 @@
 
         return `
           <div class="slide ${hasImage ? '' : 'no-image'}" style="${bg}">
-            <div class="overlay"></div>
             <div class="content">
               <div class="badge ${badgeClass}">${badgeText}</div>
               ${bodyHtml}
@@ -417,6 +476,7 @@
 
     function updateClock() {
       const now = getAccurateTime();
+
       document.getElementById('clock').textContent =
         now.toLocaleString('zh-TW', {
           month: '2-digit',
@@ -424,24 +484,36 @@
           hour: '2-digit',
           minute: '2-digit'
         });
-        
+
       checkAndRebuildSlides(false);
     }
 
     function escapeHtml(str) {
-      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
     }
+
     function escapeAttr(str) {
-      return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22');
+      return String(str || '')
+        .replace(/'/g, '%27')
+        .replace(/"/g, '%22');
     }
 
     updateClock();
+    setupMarquee();
+
     setInterval(updateClock, 10000);
 
     loadData();
     setInterval(loadData, 300 * 1000);
 
-    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
+    setInterval(function() {
+      location.reload();
+    }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
