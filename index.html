@@ -80,12 +80,10 @@
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-top: 1px solid rgba(255, 255, 255, 0.25);
       box-shadow: 0 12px 40px rgba(0,0,0, 0.6);
-      
       padding: 24px 32px;
       border-radius: 16px;
       box-sizing: border-box;
       max-width: 48vw;
-      
       opacity: 0;
       transform: translateY(30px);
       transition: all 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -174,29 +172,29 @@
       border-left-color: #4caf50;
     }
 
-    /* 🔥 終極跑馬燈修復區塊：加高、鎖行高、強制上抬 */
+    /* 🔥 終極跑馬燈防爆框寫法：物理絕對定位 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 0;
-      height: 64px; /* 🏆 加高黑框，給字體伸展空間 */
+      height: 64px; /* 黑框高度 64px */
       z-index: 30;
       background: rgba(0,0,0,.85);
       overflow: hidden;
-      display: flex;
-      align-items: center; /* 保持 flex 垂直置中 */
       border-top: 1px solid rgba(255,255,255,.15);
     }
 
     #marquee {
+      position: absolute; /* 🔥 放棄 Flexbox，強制物理定位 */
+      top: 14px; /* 🔥 硬性規定距離頂部 14px，保證上下置中 */
+      left: 0;
       white-space: nowrap;
-      font-size: 30px; /* 字體微調搭配新高度 */
-      line-height: 1; /* 🏆 拔除字體自帶的隱形上下空間 */
+      font-size: 30px; 
+      line-height: 1; 
       font-weight: 700;
       letter-spacing: 1px;
-      padding-left: 100%;
-      transform: translateY(-3px); /* 🏆 物理微調：直接把字往上推 3 像素 */
+      padding-left: 100vw;
       animation: marquee 32s linear infinite;
     }
 
@@ -214,8 +212,8 @@
     }
 
     @keyframes marquee {
-      from { transform: translateX(0); }
-      to { transform: translateX(-100%); }
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-100%); }
     }
   </style>
 </head>
