@@ -6,8 +6,8 @@
 
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
   
-  <!-- 🌟 加入 Google 官方輕量圖標庫 -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
+  <!-- 🌟 引入相容性較好的標準 Material Icons (非 Symbols) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
 
   <style>
     html, body {
@@ -59,6 +59,11 @@
       background-position: center;
       background-repeat: no-repeat;
       background-color: #000;
+      
+      /* 📺 抗卡頓手術 1：強制背景圖開闢獨立硬體圖層，減少混合計算 */
+      -webkit-transform: translate3d(0,0,0);
+      transform: translate3d(0,0,0);
+      will-change: opacity;
     }
 
     .slide.active {
@@ -126,8 +131,6 @@
     }
 
     .name-chip {
-      display: block;
-      width: auto;
       margin-bottom: 10px;
       padding: 8px 18px 8px 14px;
       border-radius: 10px;
@@ -137,21 +140,31 @@
       font-weight: 800;
       line-height: 1.3;
       white-space: nowrap;
+      
+      /* 🌟 修正排版，讓 Icon 與文字對齊 */
+      display: -webkit-flex; 
       display: flex;
+      -webkit-align-items: center;
       align-items: center;
+      width: fit-content;
     }
 
-    .name-icon {
+    /* 🌟 Google Material Icons 專屬樣式 */
+    .material-icons {
+      font-family: 'Material Icons';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 32px; /* Preferred icon size */
       display: inline-block;
-      width: 38px;
-      margin-right: 14px;
-      text-align: center;
-    }
-
-    /* 確保 Google 圖標正確顯示並置中 */
-    .material-symbols-rounded {
-      font-size: 30px;
-      vertical-align: middle;
+      line-height: 1;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      margin-right: 14px; /* Icon 與名字的間距 */
     }
 
     .class-prefix {
@@ -174,19 +187,23 @@
 
     .quote-student { border-left-color: #4caf50; }
 
-    /* 🏆 跑馬燈修復區：加高框框，解決電視上的文字裁切 */
+    /* 🏆 跑馬燈修復區 */
     #marqueeWrap {
       position: absolute;
       left: 0;
       right: 0;
       bottom: 12px;
-      height: 64px; /* 💡 從原本的 48px 加高到 64px，給字體伸展空間 */
+      height: 64px; /* 加高避免裁切 */
       z-index: 30;
       background: rgba(0,0,0,.86);
       overflow: hidden;
       display: flex;
       align-items: center;
       border-top: 2px solid rgba(255,255,255,.25);
+      
+      /* 📺 抗卡頓手術 2：將容器硬體層隔離 */
+      -webkit-transform: translate3d(0,0,0);
+      transform: translate3d(0,0,0);
     }
 
     #marquee {
@@ -194,15 +211,20 @@
       font-size: 30px;
       font-weight: 800;
       padding-left: 100%;
-      line-height: normal; /* 💡 防裁切核心 */
-      will-change: transform; /* 💡 告訴電視使用 GPU 硬體加速，讓平移更順暢 */
+      line-height: normal;
       -webkit-font-smoothing: antialiased;
+      
+      /* 📺 抗卡頓手術 3：告訴電視，這行字交給 GPU 專門處理 */
+      will-change: -webkit-transform, transform;
+      -webkit-transform: translate3d(0,0,0);
+      
       animation: marquee 30s linear infinite;
     }
 
     @keyframes marquee {
-      from { transform: translateX(0); }
-      to { transform: translateX(-100%); }
+      /* 📺 使用 3D 位移確保 WebOS 最佳效能 */
+      from { -webkit-transform: translate3d(0, 0, 0); transform: translate3d(0, 0, 0); }
+      to { -webkit-transform: translate3d(-100%, 0, 0); transform: translate3d(-100%, 0, 0); }
     }
 
     .empty {
@@ -215,7 +237,7 @@
       font-size: 48px;
       line-height: 1.6;
       text-align: center;
-      background: linear-gradient(135deg, #263238, #1565c0);
+      background: radial-gradient(circle at center, #263238, #000000);
     }
   </style>
 </head>
@@ -248,7 +270,7 @@
     var current = 0;
     var timer = null;
 
-    // 📺 防卡頓記憶體：避免每 30 秒強制重刷畫面導致卡頓
+    // 📺 防卡頓記憶體：避免不變的資料造成電視重繪卡頓
     var rawDataCacheString = '';
 
     function loadData() {
@@ -264,8 +286,7 @@
     }
 
     function handleData(data) {
-      // 📺 效能優化：把收到的資料轉成字串，跟上次比對
-      // 如果完全沒變，就直接 return 結束，跑馬燈才不會每 30 秒卡一下！
+      // 📺 效能優化：資料若沒變，直接 return。
       var newDataString = JSON.stringify(data);
       if (rawDataCacheString === newDataString) {
         return; 
@@ -390,10 +411,11 @@
             var name = trimText(names[n]);
             if (!name) continue;
 
-            // 🌟 將 Emoji 換成高質感的 Google Material Symbols
-            var icon = item.type === 'volunteer' 
-              ? '<span class="material-symbols-rounded" style="color: #ffb74d;">volunteer_activism</span>' 
-              : '<span class="material-symbols-rounded" style="color: #81c784;">local_library</span>';
+            // 🌟 核心修正：使用最古老、相容性最高的「Unicode 字元代碼」
+            // 大人志工使用 &#xeaf3; (手捧愛心)，小志工使用 &#xe54b; (閱讀圖書)
+            // 電視看不懂合字，但絕對看得懂代碼。
+            var iconCode = item.type === 'volunteer' ? '&#xeaf3;' : '&#xe54b;';
+            var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
             
             var classText = '';
 
@@ -403,7 +425,8 @@
 
             chips +=
               '<div class="name-chip">' +
-                '<span class="name-icon">' + icon + '</span>' +
+                // 🌟 使用相容性標準 CSS 類別 material-icons
+                '<span class="material-icons" style="color:' + iconColor + ';">' + iconCode + '</span>' +
                 classText +
                 '<span>' + escapeHtml(name) + '</span>' +
               '</div>';
@@ -469,7 +492,7 @@
           minute: '2-digit'
         });
 
-      // 拿掉這行 buildSlides()，改為依靠 30 秒一次的 API 來更新排班，以防頻繁重算卡頓
+      // 拿掉舊版會導致卡頓的 buildSlides()，改為依靠 30 秒一次的 loadData 更新
     }
 
     function escapeHtml(str) {
