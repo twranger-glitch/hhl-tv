@@ -6,7 +6,6 @@
 
   @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&display=swap');
   
-  <!-- 🌟 Google 官方輕量圖標庫 -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,600,1,0" />
 
   <style>
@@ -56,8 +55,6 @@
       opacity: 0;
       transition: opacity 1s ease;
       background-color: #000;
-      
-      /* 確保切換時硬體層隔離 */
       -webkit-transform: translate3d(0,0,0);
       transform: translate3d(0,0,0);
       will-change: opacity;
@@ -68,7 +65,6 @@
       z-index: 2;
     }
 
-    /* 🎬 影片與背景圖專用樣式 */
     .slide-media {
       position: absolute;
       inset: 0;
@@ -78,7 +74,7 @@
     }
 
     video.slide-media {
-      object-fit: contain; /* 確保影片比例正確不變形 */
+      object-fit: contain; 
       background-color: #000;
     }
 
@@ -393,8 +389,8 @@
         
         var mediaHtml = '';
         if (isVideo) {
-          // 🎬 如果是 MP4，產出隱音自動播放的 Video 標籤
-          mediaHtml = '<video class="slide-media" src="' + escapeAttr(item.image) + '" muted playsinline></video>';
+          // 📺 關鍵修正 1：改用 data-src，平常不要掛載影片，避免塞爆電視解碼器
+          mediaHtml = '<video class="slide-media" data-src="' + escapeAttr(item.image) + '" muted playsinline webkit-playsinline></video>';
         } else if (hasImage) {
           mediaHtml = '<div class="slide-media slide-bg-img" style="background-image:url(\'' + escapeAttr(item.image) + '\')"></div>';
         }
@@ -444,7 +440,6 @@
             '<div class="name-grid">' + chips + '</div>' +
             (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
         } else {
-          // 如果標題為空，就不顯示黑色半透明資訊框 (適合讓純影片全螢幕播放)
           if(trimText(item.title) !== "") {
               bodyHtml =
                 '<h1>' + escapeHtml(item.title) + '</h1>' +
@@ -466,7 +461,6 @@
       box.innerHTML = html;
     }
 
-    // 🎬 將下一頁的邏輯獨立出來，方便影片播完時呼叫
     function nextSlide() {
       current = (current + 1) % slides.length;
       play();
@@ -480,11 +474,15 @@
 
       var els = document.querySelectorAll('.slide');
 
+      // 📺 關鍵修正 2：每次換頁時，徹底清空「非使用中」影片的記憶體
       for (var i = 0; i < els.length; i++) {
         els[i].classList.remove('active');
-        // 暫停所有非使用中的影片，節省電視效能
         var v = els[i].querySelector('video');
-        if (v) v.pause();
+        if (v && v.src) {
+          v.pause();
+          v.removeAttribute('src'); 
+          v.load(); // 強制電視釋放資源
+        }
       }
 
       if (!els[current]) {
@@ -498,23 +496,42 @@
       var videoEl = activeSlide.querySelector('video');
 
       if (videoEl) {
-        // 🎬 如果這張是影片，強制重頭播放
-        videoEl.currentTime = 0;
-        var playPromise = videoEl.play();
+        // 📺 關鍵修正 3：切換到這一頁時，才把影片網址掛上去
+        videoEl.src = videoEl.getAttribute('data-src');
+        videoEl.load();
         
+        // 設置一個「防死機」最高等待時間（預設先給 3 分鐘，以免一直卡黑畫面）
+        timer = setTimeout(nextSlide, 180000); 
+
+        var playPromise = videoEl.play();
         if (playPromise !== undefined) {
           playPromise.catch(function(error) {
-            // 如果電視阻擋自動播放，就退回使用普通的計時器
-            timer = setTimeout(nextSlide, duration);
+            clearTimeout(timer);
+            timer = setTimeout(nextSlide, duration); // 播放失敗就當一般圖片秒數切換
           });
         }
         
-        // 🎬 監聽影片結束事件，播完才跳下一張
+        // 📺 關鍵修正 4：當影片成功讀取到長度時，精準設定安全切換時間
+        videoEl.onloadedmetadata = function() {
+           clearTimeout(timer); // 取消剛剛的 3 分鐘
+           var safeTime = (videoEl.duration * 1000) + 3000; // 影片長度再多給 3 秒緩衝
+           if (!safeTime || isNaN(safeTime) || safeTime === Infinity) {
+             safeTime = 180000; 
+           }
+           timer = setTimeout(nextSlide, safeTime);
+        };
+        
+        // 播完乖乖換下一頁
         videoEl.onended = function() {
           nextSlide();
         };
+
+        // 解碼失敗馬上換頁，拒絕死當
+        videoEl.onerror = function() {
+          nextSlide();
+        };
       } else {
-        // 如果是普通圖片，照常使用計時器
+        // 一般圖片的計時器
         timer = setTimeout(nextSlide, duration);
       }
     }
