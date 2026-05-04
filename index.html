@@ -121,8 +121,12 @@
     .name-grid {
       display: -webkit-flex;
       display: flex;
-      -webkit-flex-wrap: wrap;
-      flex-wrap: wrap;
+      /* 🌟 關鍵修改：改為垂直排列 (由上到下) */
+      -webkit-flex-direction: column;
+      flex-direction: column;
+      /* 🌟 關鍵修改：讓每個膠囊靠左對齊，不會被 slogan 拉寬 */
+      -webkit-align-items: flex-start;
+      align-items: flex-start;
       margin-top: 12px;
       margin-bottom: 6px;
     }
@@ -133,8 +137,7 @@
       -webkit-align-items: center;
       align-items: center;
       width: auto;
-      
-      margin-right: 14px;
+      /* 🌟 因為由上到下排了，所以移除右邊距，只保留下邊距 */
       margin-bottom: 14px;
       
       padding: 8px 20px 8px 16px;
