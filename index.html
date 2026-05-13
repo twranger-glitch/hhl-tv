@@ -30,7 +30,7 @@
       top: 28px;
       left: 40px;
       right: 40px;
-      z-index: 20;
+      z-index: 40;
       display: flex;
       justify-content: space-between;
       font-size: 28px;
@@ -44,7 +44,7 @@
       position: relative;
     }
 
-    /* 🛡️ 回歸最安全的幻燈片 CSS，不使用 VRAM 加速 */
+    /* 基本幻燈片設定 */
     .slide {
       position: absolute;
       top: 0;
@@ -68,6 +68,71 @@
       background: linear-gradient(135deg, #263238, #1565c0);
     }
 
+    /* =========================================
+       🌟 新增：錢天堂幸運客專屬全螢幕排版 🌟
+       ========================================= */
+    .slide-lucky {
+      background: linear-gradient(135deg, #2b1055 0%, #7597de 100%); /* 奇幻漸層魔法背景 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .lucky-bg {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 60%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      opacity: 0.35; /* 降低圖片比重，作為氣氛背景 */
+      -webkit-mask-image: linear-gradient(to right, transparent, black 50%);
+      mask-image: linear-gradient(to right, transparent, black 50%);
+      z-index: 1;
+    }
+
+    .lucky-content {
+      position: relative;
+      z-index: 20;
+      width: 85%;
+      max-width: 1400px;
+      text-align: center;
+      text-shadow: 0px 4px 15px rgba(0,0,0,0.6);
+    }
+
+    .lucky-badge {
+      display: inline-block;
+      background: #ffd700; /* 亮眼的金黃色標籤 */
+      color: #2b1055;
+      padding: 10px 30px;
+      border-radius: 50px;
+      font-size: 32px;
+      font-weight: 900;
+      margin-bottom: 25px;
+      letter-spacing: 2px;
+      box-shadow: 0 4px 15px rgba(255,215,0,0.3);
+    }
+
+    .lucky-title {
+      font-size: 55px;
+      font-weight: 900;
+      color: #ffffff;
+      margin-bottom: 40px;
+    }
+
+    .lucky-text {
+      font-size: 42px; /* 超大文字，成為視覺主體 */
+      line-height: 1.6;
+      color: #fffbe6;
+      white-space: pre-wrap; /* 🌟 完美支援紅子的 \n 斷句 */
+      font-weight: 700;
+    }
+    /* ========================================= */
+
+
+    /* 原本的左下角資訊框排版 (保留給一般文章與志工使用) */
     .content {
       position: absolute;
       left: 6vw;
@@ -113,18 +178,17 @@
 
     .subtitle {
       font-size: 20px;
-      line-height: 1.35;
+      line-height: 1.45;
       font-weight: 500;
       opacity: .92;
+      white-space: pre-wrap; /* 🌟 順便也修復一般文章的換行問題 */
     }
 
     .name-grid {
       display: -webkit-flex;
       display: flex;
-      /* 🌟 關鍵修改：改為垂直排列 (由上到下) */
       -webkit-flex-direction: column;
       flex-direction: column;
-      /* 🌟 關鍵修改：讓每個膠囊靠左對齊，不會被 slogan 拉寬 */
       -webkit-align-items: flex-start;
       align-items: flex-start;
       margin-top: 12px;
@@ -137,14 +201,11 @@
       -webkit-align-items: center;
       align-items: center;
       width: auto;
-      /* 🌟 因為由上到下排了，所以移除右邊距，只保留下邊距 */
       margin-bottom: 14px;
-      
       padding: 8px 20px 8px 16px;
       border-radius: 50px;
       background: rgba(255, 255, 255, 0.12);
       border: 1px solid rgba(255, 255, 255, 0.28);
-      
       font-size: 25px;
       font-weight: 800;
       line-height: 1.2;
@@ -179,11 +240,11 @@
       margin-top: 14px;
       letter-spacing: 1px;
       opacity: 0.95;
+      white-space: pre-wrap; /* 🌟 志工引言也支援斷句 */
     }
 
     .quote-student { border-left-color: #4caf50; }
 
-    /* 🛡️ 回歸安全的跑馬燈，只保留防裁切的 60px 與 line-height */
     #marqueeWrap {
       position: absolute;
       left: 0;
@@ -254,7 +315,7 @@
     var slides = [];
     var current = 0;
     var timer = null;
-    var rawDataCacheString = ''; // 📺 防卡頓記憶體保留
+    var rawDataCacheString = '';
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
@@ -269,7 +330,6 @@
     }
 
     function handleData(data) {
-      // 若資料無變動則不重繪，防止 30 秒卡頓
       var newDataString = JSON.stringify(data);
       if (rawDataCacheString === newDataString) {
         return; 
@@ -367,6 +427,27 @@
 
       for (var i = 0; i < slides.length; i++) {
         var item = slides[i];
+
+        // ===============================================
+        // 🌟 攔截「錢天堂幸運客」，套用專屬魔法排版！
+        // ===============================================
+        if (item.title && item.title.indexOf('錢天堂') > -1) {
+          html +=
+            '<div class="slide slide-lucky">' +
+              '<div class="lucky-bg" style="background-image:url(\'' + escapeAttr(item.image) + '\')"></div>' +
+              '<div class="lucky-content">' +
+                '<div class="lucky-badge">🎁 今日專屬幸運客 🎁</div>' +
+                '<div class="lucky-title">' + escapeHtml(item.title) + '</div>' +
+                '<div class="lucky-text">' + escapeHtml(item.subtitle) + '</div>' +
+              '</div>' +
+            '</div>';
+          continue; // 處理完幸運客，直接跳過底下的普通排版
+        }
+
+
+        // ===============================================
+        // 以下為一般文章與志工的預設排版
+        // ===============================================
         var hasImage = !!item.image;
         var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
         
@@ -374,7 +455,6 @@
         var mediaHtml = '';
 
         if (isVideo) {
-          // 🛡️ 最純淨的 video 標籤，不使用 JS 瘋狂掛載
           mediaHtml = '<video src="' + escapeAttr(item.image) + '" muted playsinline style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1;"></video>';
         } else if (hasImage) {
           bg = "background-image:url('" + escapeAttr(item.image) + "')";
@@ -404,7 +484,6 @@
             var name = trimText(names[n]);
             if (!name) continue;
 
-            // 🛡️ 退回最安全的純文字 Unicode 符號，保證不當機
             var icon = item.type === 'volunteer' ? '❤' : '📖';
             var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
             
@@ -426,7 +505,6 @@
             '<div class="name-grid">' + chips + '</div>' +
             (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
         } else {
-          // 若為影片且沒有打標題，就隱藏黑色資訊框
           if(trimText(item.title) !== "") {
               bodyHtml =
                 '<h1>' + escapeHtml(item.title) + '</h1>' +
@@ -457,7 +535,6 @@
 
       var els = document.querySelectorAll('.slide');
 
-      // 暫停所有影片並歸零
       for (var i = 0; i < els.length; i++) {
         els[i].classList.remove('active');
         var v = els[i].querySelector('video');
@@ -483,13 +560,11 @@
       };
 
       if (videoEl) {
-        // 直接播放
         var playPromise = videoEl.play();
         if (playPromise !== undefined) {
           playPromise.catch(function(e){ console.log(e); });
         }
 
-        // 預設 30 秒防呆切換
         timer = setTimeout(nextSlide, 30000);
 
         var setVideoTimer = function() {
@@ -501,7 +576,6 @@
           timer = setTimeout(nextSlide, safeTime);
         };
 
-        // 雙重保險偵測影片長度
         if (videoEl.readyState >= 1) {
           setVideoTimer();
         } else {
@@ -519,7 +593,6 @@
         };
 
       } else {
-        // 普通圖片的計時器
         timer = setTimeout(nextSlide, duration);
       }
     }
@@ -561,7 +634,6 @@
     loadData();
     setInterval(loadData, 30 * 1000);
 
-    // 每小時重新整理一次保持穩定
     setInterval(function() {
       location.reload();
     }, 60 * 60 * 1000);
