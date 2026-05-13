@@ -83,11 +83,10 @@
       background-image: url('https://twranger-glitch.github.io/hhl-tv/images/grocery.png');
       background-size: cover;
       background-position: center;
-      opacity: 0.5; /* 讓背景稍微暗一點，突出文字 */
+      opacity: 0.5; 
       z-index: 1;
     }
 
-    /* 漸層遮罩防止背景太花 */
     .lucky-overlay {
       position: absolute;
       top: 0;
@@ -108,16 +107,47 @@
     }
 
     .lucky-badge {
-      display: inline-block;
+      display: inline-flex; /* 🌟 改成 flex 讓金幣跟文字完美置中對齊 */
+      align-items: center;
       background: linear-gradient(to bottom, #ffd700, #b8860b);
-      color: #000;
-      padding: 12px 40px;
+      color: #1a0b2e;
+      padding: 10px 35px;
       border-radius: 50px;
-      font-size: 36px;
+      font-size: 38px;
       font-weight: 900;
       margin-bottom: 30px;
       letter-spacing: 4px;
       box-shadow: 0 0 30px rgba(255,215,0,0.4);
+    }
+
+    /* 🪙 高質感 3D 純 CSS 金幣 */
+    .premium-coin {
+      display: inline-block;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      /* 金屬漸層光澤 */
+      background: radial-gradient(ellipse at 30% 30%, #fff1b8 0%, #fadb14 30%, #d48806 80%, #874d00 100%);
+      border: 2px solid #fffbe6;
+      /* 內外陰影創造立體感 */
+      box-shadow:
+        inset 0 0 4px rgba(255,255,255,0.8),
+        inset 2px 2px 5px rgba(255,255,255,0.5),
+        inset -2px -2px 5px rgba(0,0,0,0.4),
+        0 4px 8px rgba(0,0,0,0.5);
+      margin: 0 15px;
+      position: relative;
+    }
+    .premium-coin::after {
+      content: '錢'; /* 中間的錢字 */
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -48%);
+      font-size: 24px;
+      font-weight: 900;
+      color: #fffbe6;
+      text-shadow: 1px 1px 2px rgba(135, 77, 0, 0.8);
     }
 
     .lucky-text {
@@ -128,7 +158,6 @@
       font-weight: 500;
     }
 
-    /* 🌟 重點突顯：登錄號碼牌 */
     .highlight-no {
       display: inline-block;
       background: #d32f2f;
@@ -143,7 +172,6 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.5);
     }
 
-    /* 🌟 重點突顯：華麗書名 */
     .highlight-book {
       display: inline-block;
       font-size: 64px;
@@ -348,12 +376,20 @@
       var mins = now.getHours() * 60 + now.getMinutes();
 
       var rawSlides = rawData.slides || [];
+      
+      // 🌟 獨立把「錢天堂幸運客」抓出來
+      var luckySlide = null;
       var breakingNews = [];
       var posts = [];
 
       for (var i = 0; i < rawSlides.length; i++) {
-        if (rawSlides[i].type === 'breaking') { breakingNews.push(rawSlides[i]); }
-        else { posts.push(rawSlides[i]); }
+        if (rawSlides[i].title && rawSlides[i].title.indexOf('錢天堂') > -1) {
+          luckySlide = rawSlides[i]; // 抽出來！
+        } else if (rawSlides[i].type === 'breaking') { 
+          breakingNews.push(rawSlides[i]); 
+        } else { 
+          posts.push(rawSlides[i]); 
+        }
       }
 
       var mixedSlides = [];
@@ -364,7 +400,7 @@
           mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
           breakIndex++;
         }
-      } else { mixedSlides = rawSlides.slice(0); }
+      } else { mixedSlides = posts.concat(breakingNews); }
 
       var activeVols = [];
       for (var v = 0; v < rawData.volunteers.length; v++) {
@@ -381,7 +417,13 @@
           activeStudents.push({ type: 'studentVol', title: stu.name, classStr: stu.classStr, subtitle: stu.phrase || '圖書室小志工，為您服務！', image: stu.image, duration: stu.duration });
         }
       }
+      
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
+
+      // 🌟 最重要的 VIP 插隊：強制把幸運客塞在陣列的最前面 [Index 0]
+      if (luckySlide) {
+        slides.unshift(luckySlide);
+      }
     }
 
     function renderSlides() {
@@ -399,7 +441,6 @@
         // 🌟 攔截「錢天堂幸運客」，套用極致魔法排版！
         // ===============================================
         if (item.title && item.title.indexOf('錢天堂') > -1) {
-          // 魔法替換：將《書名》和【登錄號】包裹特殊樣式
           var styledText = escapeHtml(item.subtitle)
             .replace(/《(.*?)》/g, '<br><span class="highlight-book">《$1》</span><br>')
             .replace(/【(.*?)】/g, '<span class="highlight-no">$1</span>');
@@ -409,7 +450,12 @@
               '<div class="lucky-bg-full"></div>' +
               '<div class="lucky-overlay"></div>' +
               '<div class="lucky-content">' +
-                '<div class="lucky-badge">🎁 今日專屬幸運客 🎁</div>' +
+                /* 🌟 套用 CSS 質感金幣 */
+                '<div class="lucky-badge">' +
+                  '<div class="premium-coin"></div>' + 
+                  '今日專屬幸運客' + 
+                  '<div class="premium-coin"></div>' +
+                '</div>' +
                 '<div class="lucky-text">' + styledText + '</div>' +
               '</div>' +
             '</div>';
