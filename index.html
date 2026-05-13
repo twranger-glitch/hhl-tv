@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
 
-  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-  /* 引入一個類似打字機/印章的英文字體，讓登錄號更像蓋章 */
-  @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
-
   <style>
+    /* 🌟 修正：@import 必須放在 <style> 標籤的最上方裡面！ */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
+
     html, body {
       margin: 0;
+      padding: 0; /* 確保沒有多餘的留白 */
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -19,8 +20,8 @@
     }
 
     #screen {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;   /* 🌟 改用 100% 取代 100vw，徹底避免滾動條干擾 */
+      height: 100%;  /* 🌟 改用 100% 取代 100vh，徹底避免滾動條干擾 */
       position: relative;
       overflow: hidden;
       color: white;
@@ -151,8 +152,8 @@
     }
 
     .lucky-text {
-      font-size: 30px;
-      line-height: 1.5;
+      font-size: 28px; /* 微調大小，確保小螢幕也能完美塞入 */
+      line-height: 1.4;
       color: #e0d8cc;
       white-space: pre-wrap;
       font-weight: 500;
@@ -167,7 +168,7 @@
       padding: 8px 30px;
       border-radius: 6px;
       font-family: 'Courier Prime', 'Courier New', monospace;
-      font-size: 65px;
+      font-size: 55px; /* 微調大小 */
       font-weight: 900;
       letter-spacing: 8px;
       transform: rotate(-3deg);
@@ -178,7 +179,7 @@
     /* 🌟 重點：書名如金箔般閃耀 */
     .highlight-book {
       display: inline-block;
-      font-size: 58px;
+      font-size: 50px; /* 微調大小 */
       color: #fffde7;
       font-weight: 900;
       text-shadow: 0 0 15px rgba(255, 249, 196, 0.6), 0 0 30px rgba(255, 215, 0, 0.3);
@@ -342,13 +343,7 @@
   <script>
     var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    var rawData = {
-      slides: [],
-      volunteers: [],
-      studentVols: [],
-      marquee: ''
-    };
-
+    var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
     var slides = [];
     var current = 0;
     var timer = null;
@@ -356,10 +351,7 @@
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
-      if (oldScript) {
-        oldScript.parentNode.removeChild(oldScript);
-      }
-
+      if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
       var script = document.createElement('script');
       script.id = 'jsonpScript';
       script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
@@ -368,9 +360,7 @@
 
     function handleData(data) {
       var newDataString = JSON.stringify(data);
-      if (rawDataCacheString === newDataString) {
-        return; 
-      }
+      if (rawDataCacheString === newDataString) { return; }
       rawDataCacheString = newDataString; 
 
       rawData.slides = data.slides || [];
@@ -379,13 +369,8 @@
       rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
 
       document.getElementById('marquee').textContent = rawData.marquee;
-
       buildSlides();
-
-      if (current >= slides.length) {
-        current = 0;
-      }
-
+      if (current >= slides.length) { current = 0; }
       renderSlides();
       play();
     }
@@ -397,7 +382,6 @@
 
       var rawSlides = rawData.slides || [];
       
-      // 🌟 獨立抓出「錢天堂幸運客」
       var luckySlide = null;
       var breakingNews = [];
       var posts = [];
@@ -413,7 +397,6 @@
       }
 
       var mixedSlides = [];
-
       if (breakingNews.length > 0 && posts.length > 0) {
         var breakIndex = 0;
         for (var p = 0; p < posts.length; p++) {
@@ -421,21 +404,13 @@
           mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
           breakIndex++;
         }
-      } else {
-        mixedSlides = posts.concat(breakingNews);
-      }
+      } else { mixedSlides = posts.concat(breakingNews); }
 
       var activeVols = [];
       for (var v = 0; v < rawData.volunteers.length; v++) {
         var item = rawData.volunteers[v];
         if (item.dayOfWeek === day && mins >= item.startMins && mins <= item.endMins) {
-          activeVols.push({
-            type: 'volunteer',
-            title: item.name,
-            subtitle: item.phrase,
-            image: item.image,
-            duration: item.duration
-          });
+          activeVols.push({ type: 'volunteer', title: item.name, subtitle: item.phrase, image: item.image, duration: item.duration });
         }
       }
 
@@ -443,20 +418,12 @@
       for (var s = 0; s < rawData.studentVols.length; s++) {
         var stu = rawData.studentVols[s];
         if (stu.dayOfWeek === day) {
-          activeStudents.push({
-            type: 'studentVol',
-            title: stu.name,
-            classStr: stu.classStr,
-            subtitle: stu.phrase || '圖書室小志工，為您服務！',
-            image: stu.image,
-            duration: stu.duration
-          });
+          activeStudents.push({ type: 'studentVol', title: stu.name, classStr: stu.classStr, subtitle: stu.phrase || '圖書室小志工，為您服務！', image: stu.image, duration: stu.duration });
         }
       }
       
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
 
-      // 🌟 VIP 特權：強制把幸運客塞在最前面 (Index 0)
       if (luckySlide) {
         slides.unshift(luckySlide);
       }
@@ -464,22 +431,16 @@
 
     function renderSlides() {
       var box = document.getElementById('slides');
-
       if (!slides.length) {
         box.innerHTML = '<div class="empty">目前沒有可播放的消息</div>';
         return;
       }
 
       var html = '';
-
       for (var i = 0; i < slides.length; i++) {
         var item = slides[i];
 
-        // ===============================================
-        // 🌟 攔截「錢天堂幸運客」，套用印章魔法排版
-        // ===============================================
         if (item.title && item.title.indexOf('錢天堂') > -1) {
-          // 替換《書名》和【登錄號】的特殊樣式
           var styledText = escapeHtml(item.subtitle)
             .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
             .replace(/【(.*?)】/g, '<span class="highlight-stamp">$1</span>');
@@ -497,12 +458,9 @@
                 '<div class="lucky-text">' + styledText + '</div>' +
               '</div>' +
             '</div>';
-          continue; // 跳過下方的一般排版
+          continue;
         }
 
-        // ===============================================
-        // 以下為一般文章與志工的排版
-        // ===============================================
         var hasImage = !!item.image;
         var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
         var bg = '';
@@ -516,181 +474,81 @@
 
         var badgeText = '圖書室消息';
         var badgeClass = '';
-
-        if (item.type === 'breaking') {
-          badgeText = '號外插播';
-          badgeClass = 'badge-breaking';
-        } else if (item.type === 'volunteer') {
-          badgeText = '今日值班志工';
-          badgeClass = 'badge-volunteer';
-        } else if (item.type === 'studentVol') {
-          badgeText = '今日小志工';
-          badgeClass = 'badge-student';
-        }
+        if (item.type === 'breaking') { badgeText = '號外插播'; badgeClass = 'badge-breaking'; }
+        else if (item.type === 'volunteer') { badgeText = '今日值班志工'; badgeClass = 'badge-volunteer'; }
+        else if (item.type === 'studentVol') { badgeText = '今日小志工'; badgeClass = 'badge-student'; }
 
         var bodyHtml = '';
-
         if (item.type === 'volunteer' || item.type === 'studentVol') {
           var names = String(item.title || '').split(/[\n、,，]+/);
           var chips = '';
-
           for (var n = 0; n < names.length; n++) {
             var name = trimText(names[n]);
             if (!name) continue;
-
             var icon = item.type === 'volunteer' ? '❤' : '📖';
             var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
-            
-            var classText = '';
-            if (item.type === 'studentVol' && item.classStr) {
-              classText = '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>';
-            }
-
-            chips +=
-              '<div class="name-chip">' +
-                '<span class="name-icon" style="color:' + iconColor + ';">' + icon + '</span>' +
-                classText +
-                '<span>' + escapeHtml(name) + '</span>' +
-              '</div>';
+            var classText = (item.type === 'studentVol' && item.classStr) ? '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>' : '';
+            chips += '<div class="name-chip"><span class="name-icon" style="color:'+iconColor+';">' + icon + '</span>' + classText + '<span>' + escapeHtml(name) + '</span></div>';
           }
-
           var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
-          bodyHtml =
-            '<div class="name-grid">' + chips + '</div>' +
-            (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
+          bodyHtml = '<div class="name-grid">' + chips + '</div>' + (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
         } else {
           if(trimText(item.title) !== "") {
-              bodyHtml =
-                '<h1>' + escapeHtml(item.title) + '</h1>' +
-                '<div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
+              bodyHtml = '<h1>' + escapeHtml(item.title) + '</h1><div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
           }
         }
 
-        var contentHtml = '';
-        if (bodyHtml !== '') {
-          contentHtml = '<div class="content" style="z-index:25;"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>';
-        }
-
-        html +=
-          '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' +
-            mediaHtml +
-            contentHtml +
-          '</div>';
+        var contentHtml = bodyHtml !== '' ? '<div class="content" style="z-index:25;"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>' : '';
+        html += '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
       }
-
       box.innerHTML = html;
     }
 
     function play() {
       clearTimeout(timer);
       timer = null;
-
       if (!slides.length) return;
-
       var els = document.querySelectorAll('.slide');
-
       for (var i = 0; i < els.length; i++) {
         els[i].classList.remove('active');
         var v = els[i].querySelector('video');
-        if (v) {
-          v.pause();
-          v.currentTime = 0;
-        }
+        if (v) { v.pause(); v.currentTime = 0; }
       }
-
-      if (!els[current]) {
-        current = 0;
-      }
-
+      if (!els[current]) { current = 0; }
       var activeSlide = els[current];
       activeSlide.classList.add('active');
-
       var duration = Number(slides[current].duration || 12) * 1000;
       var videoEl = activeSlide.querySelector('video');
-
-      var nextSlide = function() {
-        current = (current + 1) % slides.length;
-        play();
-      };
+      var nextSlide = function() { current = (current + 1) % slides.length; play(); };
 
       if (videoEl) {
-        var playPromise = videoEl.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(function(e){ console.log(e); });
-        }
-
+        videoEl.play().catch(function(e){ console.log(e); });
         timer = setTimeout(nextSlide, 30000);
-
         var setVideoTimer = function() {
           clearTimeout(timer);
           var safeTime = (videoEl.duration * 1000) + 1000;
-          if (!safeTime || isNaN(safeTime) || safeTime === Infinity) {
-            safeTime = 30000;
-          }
-          timer = setTimeout(nextSlide, safeTime);
+          timer = setTimeout(nextSlide, isNaN(safeTime) ? 30000 : safeTime);
         };
-
-        if (videoEl.readyState >= 1) {
-          setVideoTimer();
-        } else {
-          videoEl.onloadedmetadata = setVideoTimer;
-        }
-
-        videoEl.onended = function() {
-          clearTimeout(timer);
-          nextSlide();
-        };
-
-        videoEl.onerror = function() {
-          clearTimeout(timer);
-          nextSlide();
-        };
-
-      } else {
-        timer = setTimeout(nextSlide, duration);
-      }
+        if (videoEl.readyState >= 1) { setVideoTimer(); } else { videoEl.onloadedmetadata = setVideoTimer; }
+        videoEl.onended = nextSlide;
+        videoEl.onerror = nextSlide;
+      } else { timer = setTimeout(nextSlide, duration); }
     }
 
     function updateClock() {
       var now = new Date();
-
-      document.getElementById('clock').textContent =
-        now.toLocaleString('zh-TW', {
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+      document.getElementById('clock').textContent = now.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
-    function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    function escapeAttr(str) {
-      return String(str || '')
-        .replace(/'/g, '%27')
-        .replace(/"/g, '%22');
-    }
-
-    function trimText(str) {
-      return String(str || '').replace(/^\s+|\s+$/g, '');
-    }
+    function escapeHtml(str) { return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function escapeAttr(str) { return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22'); }
+    function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
 
     updateClock();
     setInterval(updateClock, 10000);
-
     loadData();
     setInterval(loadData, 30 * 1000);
-
-    setInterval(function() {
-      location.reload();
-    }, 60 * 60 * 1000);
+    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
