@@ -44,7 +44,6 @@
       position: relative;
     }
 
-    /* 基本幻燈片設定 */
     .slide {
       position: absolute;
       top: 0;
@@ -64,75 +63,99 @@
       z-index: 2;
     }
 
-    .slide.no-image {
-      background: linear-gradient(135deg, #263238, #1565c0);
-    }
-
     /* =========================================
-       🌟 新增：錢天堂幸運客專屬全螢幕排版 🌟
+       🌟 錢天堂幸運客：極致魔法排版 🌟
        ========================================= */
     .slide-lucky {
-      background: linear-gradient(135deg, #2b1055 0%, #7597de 100%); /* 奇幻漸層魔法背景 */
+      background: #1a0b2e;
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 10;
     }
 
-    .lucky-bg {
+    .lucky-bg-full {
       position: absolute;
-      right: 0;
       top: 0;
-      width: 60%;
+      left: 0;
+      width: 100%;
       height: 100%;
+      background-image: url('https://twranger-glitch.github.io/hhl-tv/images/grocery.png');
       background-size: cover;
       background-position: center;
-      opacity: 0.35; /* 降低圖片比重，作為氣氛背景 */
-      -webkit-mask-image: linear-gradient(to right, transparent, black 50%);
-      mask-image: linear-gradient(to right, transparent, black 50%);
+      opacity: 0.5; /* 讓背景稍微暗一點，突出文字 */
       z-index: 1;
+    }
+
+    /* 漸層遮罩防止背景太花 */
+    .lucky-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.8) 100%);
+      z-index: 2;
     }
 
     .lucky-content {
       position: relative;
       z-index: 20;
-      width: 85%;
-      max-width: 1400px;
+      width: 90%;
+      max-width: 1600px;
       text-align: center;
-      text-shadow: 0px 4px 15px rgba(0,0,0,0.6);
+      filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.8));
     }
 
     .lucky-badge {
       display: inline-block;
-      background: #ffd700; /* 亮眼的金黃色標籤 */
-      color: #2b1055;
-      padding: 10px 30px;
+      background: linear-gradient(to bottom, #ffd700, #b8860b);
+      color: #000;
+      padding: 12px 40px;
       border-radius: 50px;
-      font-size: 32px;
+      font-size: 36px;
       font-weight: 900;
-      margin-bottom: 25px;
-      letter-spacing: 2px;
-      box-shadow: 0 4px 15px rgba(255,215,0,0.3);
-    }
-
-    .lucky-title {
-      font-size: 55px;
-      font-weight: 900;
-      color: #ffffff;
-      margin-bottom: 40px;
+      margin-bottom: 30px;
+      letter-spacing: 4px;
+      box-shadow: 0 0 30px rgba(255,215,0,0.4);
     }
 
     .lucky-text {
-      font-size: 42px; /* 超大文字，成為視覺主體 */
-      line-height: 1.6;
-      color: #fffbe6;
-      white-space: pre-wrap; /* 🌟 完美支援紅子的 \n 斷句 */
-      font-weight: 700;
+      font-size: 36px;
+      line-height: 1.7;
+      color: #ffffff;
+      white-space: pre-wrap;
+      font-weight: 500;
     }
+
+    /* 🌟 重點突顯：登錄號碼牌 */
+    .highlight-no {
+      display: inline-block;
+      background: #d32f2f;
+      color: white;
+      padding: 0 15px;
+      border-radius: 8px;
+      font-size: 50px;
+      font-weight: 900;
+      margin: 0 10px;
+      vertical-align: middle;
+      border: 3px solid #ffc107;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+
+    /* 🌟 重點突顯：華麗書名 */
+    .highlight-book {
+      display: inline-block;
+      font-size: 64px;
+      color: #fff9c4;
+      font-weight: 900;
+      text-shadow: 0 0 20px rgba(255, 249, 196, 0.8), 0 0 40px rgba(255, 215, 0, 0.4);
+      margin: 10px 0;
+      padding: 0 10px;
+    }
+
     /* ========================================= */
 
-
-    /* 原本的左下角資訊框排版 (保留給一般文章與志工使用) */
     .content {
       position: absolute;
       left: 6vw;
@@ -181,24 +204,19 @@
       line-height: 1.45;
       font-weight: 500;
       opacity: .92;
-      white-space: pre-wrap; /* 🌟 順便也修復一般文章的換行問題 */
+      white-space: pre-wrap;
     }
 
     .name-grid {
-      display: -webkit-flex;
       display: flex;
-      -webkit-flex-direction: column;
       flex-direction: column;
-      -webkit-align-items: flex-start;
       align-items: flex-start;
       margin-top: 12px;
       margin-bottom: 6px;
     }
 
     .name-chip {
-      display: -webkit-flex;
       display: flex;
-      -webkit-align-items: center;
       align-items: center;
       width: auto;
       margin-bottom: 14px;
@@ -240,7 +258,7 @@
       margin-top: 14px;
       letter-spacing: 1px;
       opacity: 0.95;
-      white-space: pre-wrap; /* 🌟 志工引言也支援斷句 */
+      white-space: pre-wrap;
     }
 
     .quote-student { border-left-color: #4caf50; }
@@ -272,19 +290,6 @@
       from { transform: translateX(0); }
       to { transform: translateX(-100%); }
     }
-
-    .empty {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      box-sizing: border-box;
-      padding: 70px;
-      font-size: 48px;
-      line-height: 1.6;
-      text-align: center;
-      background: linear-gradient(135deg, #263238, #1565c0);
-    }
   </style>
 </head>
 
@@ -305,13 +310,7 @@
   <script>
     var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    var rawData = {
-      slides: [],
-      volunteers: [],
-      studentVols: [],
-      marquee: ''
-    };
-
+    var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
     var slides = [];
     var current = 0;
     var timer = null;
@@ -319,10 +318,7 @@
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
-      if (oldScript) {
-        oldScript.parentNode.removeChild(oldScript);
-      }
-
+      if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
       var script = document.createElement('script');
       script.id = 'jsonpScript';
       script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
@@ -331,9 +327,7 @@
 
     function handleData(data) {
       var newDataString = JSON.stringify(data);
-      if (rawDataCacheString === newDataString) {
-        return; 
-      }
+      if (rawDataCacheString === newDataString) { return; }
       rawDataCacheString = newDataString; 
 
       rawData.slides = data.slides || [];
@@ -342,13 +336,8 @@
       rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
 
       document.getElementById('marquee').textContent = rawData.marquee;
-
       buildSlides();
-
-      if (current >= slides.length) {
-        current = 0;
-      }
-
+      if (current >= slides.length) { current = 0; }
       renderSlides();
       play();
     }
@@ -363,15 +352,11 @@
       var posts = [];
 
       for (var i = 0; i < rawSlides.length; i++) {
-        if (rawSlides[i].type === 'breaking') {
-          breakingNews.push(rawSlides[i]);
-        } else {
-          posts.push(rawSlides[i]);
-        }
+        if (rawSlides[i].type === 'breaking') { breakingNews.push(rawSlides[i]); }
+        else { posts.push(rawSlides[i]); }
       }
 
       var mixedSlides = [];
-
       if (breakingNews.length > 0 && posts.length > 0) {
         var breakIndex = 0;
         for (var p = 0; p < posts.length; p++) {
@@ -379,21 +364,13 @@
           mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
           breakIndex++;
         }
-      } else {
-        mixedSlides = rawSlides.slice(0);
-      }
+      } else { mixedSlides = rawSlides.slice(0); }
 
       var activeVols = [];
       for (var v = 0; v < rawData.volunteers.length; v++) {
         var item = rawData.volunteers[v];
         if (item.dayOfWeek === day && mins >= item.startMins && mins <= item.endMins) {
-          activeVols.push({
-            type: 'volunteer',
-            title: item.name,
-            subtitle: item.phrase,
-            image: item.image,
-            duration: item.duration
-          });
+          activeVols.push({ type: 'volunteer', title: item.name, subtitle: item.phrase, image: item.image, duration: item.duration });
         }
       }
 
@@ -401,56 +378,49 @@
       for (var s = 0; s < rawData.studentVols.length; s++) {
         var stu = rawData.studentVols[s];
         if (stu.dayOfWeek === day) {
-          activeStudents.push({
-            type: 'studentVol',
-            title: stu.name,
-            classStr: stu.classStr,
-            subtitle: stu.phrase || '圖書室小志工，為您服務！',
-            image: stu.image,
-            duration: stu.duration
-          });
+          activeStudents.push({ type: 'studentVol', title: stu.name, classStr: stu.classStr, subtitle: stu.phrase || '圖書室小志工，為您服務！', image: stu.image, duration: stu.duration });
         }
       }
-
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
     }
 
     function renderSlides() {
       var box = document.getElementById('slides');
-
       if (!slides.length) {
-        box.innerHTML = '<div class="empty">目前沒有可播放的圖書室消息<br>請確認 Google 試算表資料</div>';
+        box.innerHTML = '<div class="empty">目前沒有可播放的消息</div>';
         return;
       }
 
       var html = '';
-
       for (var i = 0; i < slides.length; i++) {
         var item = slides[i];
 
         // ===============================================
-        // 🌟 攔截「錢天堂幸運客」，套用專屬魔法排版！
+        // 🌟 攔截「錢天堂幸運客」，套用極致魔法排版！
         // ===============================================
         if (item.title && item.title.indexOf('錢天堂') > -1) {
+          // 魔法替換：將《書名》和【登錄號】包裹特殊樣式
+          var styledText = escapeHtml(item.subtitle)
+            .replace(/《(.*?)》/g, '<br><span class="highlight-book">《$1》</span><br>')
+            .replace(/【(.*?)】/g, '<span class="highlight-no">$1</span>');
+
           html +=
             '<div class="slide slide-lucky">' +
-              '<div class="lucky-bg" style="background-image:url(\'' + escapeAttr(item.image) + '\')"></div>' +
+              '<div class="lucky-bg-full"></div>' +
+              '<div class="lucky-overlay"></div>' +
               '<div class="lucky-content">' +
                 '<div class="lucky-badge">🎁 今日專屬幸運客 🎁</div>' +
-                '<div class="lucky-title">' + escapeHtml(item.title) + '</div>' +
-                '<div class="lucky-text">' + escapeHtml(item.subtitle) + '</div>' +
+                '<div class="lucky-text">' + styledText + '</div>' +
               '</div>' +
             '</div>';
-          continue; // 處理完幸運客，直接跳過底下的普通排版
+          continue;
         }
-
 
         // ===============================================
         // 以下為一般文章與志工的預設排版
         // ===============================================
         var hasImage = !!item.image;
         var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
-        
         var bg = '';
         var mediaHtml = '';
 
@@ -462,181 +432,83 @@
 
         var badgeText = '圖書室消息';
         var badgeClass = '';
-
-        if (item.type === 'breaking') {
-          badgeText = '號外插播';
-          badgeClass = 'badge-breaking';
-        } else if (item.type === 'volunteer') {
-          badgeText = '今日值班志工';
-          badgeClass = 'badge-volunteer';
-        } else if (item.type === 'studentVol') {
-          badgeText = '今日小志工';
-          badgeClass = 'badge-student';
-        }
+        if (item.type === 'breaking') { badgeText = '號外插播'; badgeClass = 'badge-breaking'; }
+        else if (item.type === 'volunteer') { badgeText = '今日值班志工'; badgeClass = 'badge-volunteer'; }
+        else if (item.type === 'studentVol') { badgeText = '今日小志工'; badgeClass = 'badge-student'; }
 
         var bodyHtml = '';
-
         if (item.type === 'volunteer' || item.type === 'studentVol') {
           var names = String(item.title || '').split(/[\n、,，]+/);
           var chips = '';
-
           for (var n = 0; n < names.length; n++) {
             var name = trimText(names[n]);
             if (!name) continue;
-
             var icon = item.type === 'volunteer' ? '❤' : '📖';
             var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
-            
-            var classText = '';
-            if (item.type === 'studentVol' && item.classStr) {
-              classText = '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>';
-            }
-
-            chips +=
-              '<div class="name-chip">' +
-                '<span class="name-icon" style="color:' + iconColor + ';">' + icon + '</span>' +
-                classText +
-                '<span>' + escapeHtml(name) + '</span>' +
-              '</div>';
+            var classText = (item.type === 'studentVol' && item.classStr) ? '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>' : '';
+            chips += '<div class="name-chip"><span class="name-icon" style="color:'+iconColor+';">' + icon + '</span>' + classText + '<span>' + escapeHtml(name) + '</span></div>';
           }
-
           var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
-          bodyHtml =
-            '<div class="name-grid">' + chips + '</div>' +
-            (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
+          bodyHtml = '<div class="name-grid">' + chips + '</div>' + (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
         } else {
           if(trimText(item.title) !== "") {
-              bodyHtml =
-                '<h1>' + escapeHtml(item.title) + '</h1>' +
-                '<div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
+              bodyHtml = '<h1>' + escapeHtml(item.title) + '</h1><div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
           }
         }
 
-        var contentHtml = '';
-        if (bodyHtml !== '') {
-          contentHtml = '<div class="content" style="z-index:25;"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>';
-        }
-
-        html +=
-          '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' +
-            mediaHtml +
-            contentHtml +
-          '</div>';
+        var contentHtml = bodyHtml !== '' ? '<div class="content" style="z-index:25;"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>' : '';
+        html += '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
       }
-
       box.innerHTML = html;
     }
 
     function play() {
       clearTimeout(timer);
       timer = null;
-
       if (!slides.length) return;
-
       var els = document.querySelectorAll('.slide');
-
       for (var i = 0; i < els.length; i++) {
         els[i].classList.remove('active');
         var v = els[i].querySelector('video');
-        if (v) {
-          v.pause();
-          v.currentTime = 0;
-        }
+        if (v) { v.pause(); v.currentTime = 0; }
       }
-
-      if (!els[current]) {
-        current = 0;
-      }
-
+      if (!els[current]) { current = 0; }
       var activeSlide = els[current];
       activeSlide.classList.add('active');
-
       var duration = Number(slides[current].duration || 12) * 1000;
       var videoEl = activeSlide.querySelector('video');
-
-      var nextSlide = function() {
-        current = (current + 1) % slides.length;
-        play();
-      };
+      var nextSlide = function() { current = (current + 1) % slides.length; play(); };
 
       if (videoEl) {
-        var playPromise = videoEl.play();
-        if (playPromise !== undefined) {
-          playPromise.catch(function(e){ console.log(e); });
-        }
-
+        videoEl.play().catch(function(e){ console.log(e); });
         timer = setTimeout(nextSlide, 30000);
-
         var setVideoTimer = function() {
           clearTimeout(timer);
           var safeTime = (videoEl.duration * 1000) + 1000;
-          if (!safeTime || isNaN(safeTime) || safeTime === Infinity) {
-            safeTime = 30000;
-          }
-          timer = setTimeout(nextSlide, safeTime);
+          timer = setTimeout(nextSlide, isNaN(safeTime) ? 30000 : safeTime);
         };
-
-        if (videoEl.readyState >= 1) {
-          setVideoTimer();
-        } else {
-          videoEl.onloadedmetadata = setVideoTimer;
-        }
-
-        videoEl.onended = function() {
-          clearTimeout(timer);
-          nextSlide();
-        };
-
-        videoEl.onerror = function() {
-          clearTimeout(timer);
-          nextSlide();
-        };
-
-      } else {
-        timer = setTimeout(nextSlide, duration);
-      }
+        if (videoEl.readyState >= 1) { setVideoTimer(); } else { videoEl.onloadedmetadata = setVideoTimer; }
+        videoEl.onended = nextSlide;
+        videoEl.onerror = nextSlide;
+      } else { timer = setTimeout(nextSlide, duration); }
     }
 
     function updateClock() {
       var now = new Date();
-
-      document.getElementById('clock').textContent =
-        now.toLocaleString('zh-TW', {
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
+      document.getElementById('clock').textContent = now.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
     }
 
     function escapeHtml(str) {
-      return String(str || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
-
-    function escapeAttr(str) {
-      return String(str || '')
-        .replace(/'/g, '%27')
-        .replace(/"/g, '%22');
-    }
-
-    function trimText(str) {
-      return String(str || '').replace(/^\s+|\s+$/g, '');
-    }
+    function escapeAttr(str) { return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22'); }
+    function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
 
     updateClock();
     setInterval(updateClock, 10000);
-
     loadData();
     setInterval(loadData, 30 * 1000);
-
-    setInterval(function() {
-      location.reload();
-    }, 60 * 60 * 1000);
+    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
