@@ -5,324 +5,103 @@
   <title>Haidian Hidden Library</title>
 
   <style>
-    /* 🌟 修正：@import 必須放在 <style> 標籤的最上方裡面！ */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
 
     html, body {
-      margin: 0;
-      padding: 0; /* 確保沒有多餘的留白 */
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-      background: #000;
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      overflow: hidden; background: #000;
       font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
     }
 
     #screen {
-      width: 100%;   /* 🌟 改用 100% 取代 100vw，徹底避免滾動條干擾 */
-      height: 100%;  /* 🌟 改用 100% 取代 100vh，徹底避免滾動條干擾 */
-      position: relative;
-      overflow: hidden;
-      color: white;
-      background: #000;
+      width: 100%; height: 100%; position: relative;
+      overflow: hidden; color: white; background: #000;
     }
 
     .topbar {
-      position: absolute;
-      top: 28px;
-      left: 40px;
-      right: 40px;
-      z-index: 40;
-      display: flex;
-      justify-content: space-between;
-      font-size: 28px;
-      font-weight: 700;
-      text-shadow: 0 2px 8px rgba(0,0,0,.8);
+      position: absolute; top: 28px; left: 40px; right: 40px;
+      z-index: 40; display: flex; justify-content: space-between;
+      font-size: 28px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.8);
     }
 
-    #slides {
-      width: 100%;
-      height: 100%;
-      position: relative;
-    }
+    #slides { width: 100%; height: 100%; position: relative; }
 
     .slide {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      transition: opacity 1s ease;
-      background-size: contain;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-color: #000;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      opacity: 0; transition: opacity 1s ease;
+      background-size: contain; background-position: center;
+      background-repeat: no-repeat; background-color: #000;
     }
+    .slide.active { opacity: 1; z-index: 2; }
+    .slide.no-image { background: linear-gradient(135deg, #263238, #1565c0); }
 
-    .slide.active {
-      opacity: 1;
-      z-index: 2;
+    /* =========================================
+       ❄️ 冷氣通知專屬排版 ❄️
+       ========================================= */
+    .slide-ac {
+      background: linear-gradient(135deg, #002b5e 0%, #000212 100%);
+      display: flex; align-items: center; justify-content: center; z-index: 10;
     }
-
-    .slide.no-image {
-      background: linear-gradient(135deg, #263238, #1565c0);
+    .ac-bg {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: radial-gradient(circle at top right, rgba(0, 210, 255, 0.25) 0%, transparent 50%),
+                  radial-gradient(circle at bottom left, rgba(58, 123, 213, 0.25) 0%, transparent 50%);
+      z-index: 1;
+    }
+    .ac-content {
+      position: relative; z-index: 20; text-align: center;
+      filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.6));
+    }
+    .ac-badge {
+      display: inline-block; background: #00d2ff; color: #00132b;
+      padding: 10px 35px; border-radius: 50px; font-size: 34px;
+      font-weight: 900; margin-bottom: 30px; letter-spacing: 4px;
+      box-shadow: 0 0 30px rgba(0, 210, 255, 0.4);
+    }
+    .ac-temp {
+      font-size: 150px; font-weight: 900; color: #ffffff;
+      text-shadow: 0 0 40px rgba(0, 210, 255, 0.8);
+      line-height: 1; margin-bottom: 25px;
+    }
+    .ac-unit { font-size: 70px; vertical-align: super; }
+    .ac-text {
+      font-size: 38px; line-height: 1.6; color: #b2ebf2; font-weight: 700;
     }
 
     /* =========================================
        🌟 錢天堂幸運客：復古印章魔法排版 🌟
        ========================================= */
-    .slide-lucky {
-      background: #150a21;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
+    .slide-lucky { background: #150a21; display: flex; align-items: center; justify-content: center; z-index: 10; }
+    .lucky-bg-full { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('https://twranger-glitch.github.io/hhl-tv/images/grocery.png'); background-size: cover; background-position: center; opacity: 0.45; z-index: 1; }
+    .lucky-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(15,8,30,0.1) 0%, rgba(10,4,20,0.85) 100%); z-index: 2; }
+    .lucky-content { position: relative; z-index: 20; width: 90%; max-width: 1400px; text-align: center; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.9)); }
+    .lucky-badge { display: inline-flex; align-items: center; background: linear-gradient(to bottom, #ffd700, #b8860b); color: #1a0b2e; padding: 10px 35px; border-radius: 50px; font-size: 34px; font-weight: 900; margin-bottom: 25px; letter-spacing: 4px; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
+    .premium-coin { display: inline-block; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(ellipse at 30% 30%, #fff1b8 0%, #fadb14 30%, #d48806 80%, #874d00 100%); border: 2px solid #fffbe6; box-shadow: inset 0 0 4px rgba(255,255,255,0.8), inset 2px 2px 5px rgba(255,255,255,0.5), inset -2px -2px 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.5); margin: 0 15px; position: relative; }
+    .premium-coin::after { content: '錢'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -48%); font-size: 22px; font-weight: 900; color: #fffbe6; text-shadow: 1px 1px 2px rgba(135, 77, 0, 0.8); }
+    .lucky-text { font-size: 30px; line-height: 1.5; color: #e0d8cc; white-space: pre-wrap; font-weight: 500; }
+    .highlight-stamp { display: inline-block; color: #d32f2f; background: #fdfaf3; border: 4px solid #d32f2f; padding: 8px 30px; border-radius: 6px; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 65px; font-weight: 900; letter-spacing: 8px; transform: rotate(-3deg); box-shadow: 3px 3px 0px rgba(211, 47, 47, 0.2), 0 10px 20px rgba(0,0,0,0.6); margin: 10px 0 25px 0; }
+    .highlight-book { display: inline-block; font-size: 58px; color: #fffde7; font-weight: 900; text-shadow: 0 0 15px rgba(255, 249, 196, 0.6), 0 0 30px rgba(255, 215, 0, 0.3); margin: 10px 0 20px 0; padding: 0 10px; letter-spacing: 2px; }
 
-    .lucky-bg-full {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-image: url('https://twranger-glitch.github.io/hhl-tv/images/grocery.png');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.45;
-      z-index: 1;
-    }
-
-    .lucky-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle at center, rgba(15,8,30,0.1) 0%, rgba(10,4,20,0.85) 100%);
-      z-index: 2;
-    }
-
-    .lucky-content {
-      position: relative;
-      z-index: 20;
-      width: 90%;
-      max-width: 1400px;
-      text-align: center;
-      filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.9));
-    }
-
-    .lucky-badge {
-      display: inline-flex;
-      align-items: center;
-      background: linear-gradient(to bottom, #ffd700, #b8860b);
-      color: #1a0b2e;
-      padding: 10px 35px;
-      border-radius: 50px;
-      font-size: 34px;
-      font-weight: 900;
-      margin-bottom: 25px;
-      letter-spacing: 4px;
-      box-shadow: 0 0 30px rgba(255,215,0,0.3);
-    }
-
-    .premium-coin {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: radial-gradient(ellipse at 30% 30%, #fff1b8 0%, #fadb14 30%, #d48806 80%, #874d00 100%);
-      border: 2px solid #fffbe6;
-      box-shadow: inset 0 0 4px rgba(255,255,255,0.8), inset 2px 2px 5px rgba(255,255,255,0.5), inset -2px -2px 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.5);
-      margin: 0 15px;
-      position: relative;
-    }
-
-    .premium-coin::after {
-      content: '錢';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -48%);
-      font-size: 22px;
-      font-weight: 900;
-      color: #fffbe6;
-      text-shadow: 1px 1px 2px rgba(135, 77, 0, 0.8);
-    }
-
-    .lucky-text {
-      font-size: 28px; /* 微調大小，確保小螢幕也能完美塞入 */
-      line-height: 1.4;
-      color: #e0d8cc;
-      white-space: pre-wrap;
-      font-weight: 500;
-    }
-
-    /* 🌟 重點：復古借閱卡紅色印章風格 */
-    .highlight-stamp {
-      display: inline-block;
-      color: #d32f2f;
-      background: #fdfaf3;
-      border: 4px solid #d32f2f;
-      padding: 8px 30px;
-      border-radius: 6px;
-      font-family: 'Courier Prime', 'Courier New', monospace;
-      font-size: 55px; /* 微調大小 */
-      font-weight: 900;
-      letter-spacing: 8px;
-      transform: rotate(-3deg);
-      box-shadow: 3px 3px 0px rgba(211, 47, 47, 0.2), 0 10px 20px rgba(0,0,0,0.6);
-      margin: 10px 0 25px 0;
-    }
-
-    /* 🌟 重點：書名如金箔般閃耀 */
-    .highlight-book {
-      display: inline-block;
-      font-size: 50px; /* 微調大小 */
-      color: #fffde7;
-      font-weight: 900;
-      text-shadow: 0 0 15px rgba(255, 249, 196, 0.6), 0 0 30px rgba(255, 215, 0, 0.3);
-      margin: 10px 0 20px 0;
-      padding: 0 10px;
-      letter-spacing: 2px;
-    }
     /* ========================================= */
-
-    .content {
-      position: absolute;
-      left: 6vw;
-      bottom: 11vh;
-      z-index: 25;
-      background: rgba(0,0,0,.68);
-      padding: 14px 18px 16px;
-      border-radius: 12px;
-      box-sizing: border-box;
-      max-width: 46vw;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.8s ease;
-    }
-
-    .slide.active .content {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .badge {
-      display: inline-block;
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 18px;
-      font-weight: 900;
-      margin-bottom: 8px;
-      letter-spacing: 1px;
-      background: #00bcd4;
-      color: #fff;
-    }
-
+    .content { position: absolute; left: 6vw; bottom: 11vh; z-index: 25; background: rgba(0,0,0,.68); padding: 14px 18px 16px; border-radius: 12px; box-sizing: border-box; max-width: 46vw; opacity: 0; transform: translateY(20px); transition: all 0.8s ease; }
+    .slide.active .content { opacity: 1; transform: translateY(0); }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 18px; font-weight: 900; margin-bottom: 8px; letter-spacing: 1px; background: #00bcd4; color: #fff; }
     .badge-breaking { background: #d32f2f; }
     .badge-volunteer { background: #f57c00; }
     .badge-student { background: #388e3c; }
-
-    h1 {
-      font-size: 30px;
-      line-height: 1.25;
-      margin: 0 0 6px;
-      font-weight: 900;
-    }
-
-    .subtitle {
-      font-size: 20px;
-      line-height: 1.45;
-      font-weight: 500;
-      opacity: .92;
-      white-space: pre-wrap;
-    }
-
-    .name-grid {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-top: 12px;
-      margin-bottom: 6px;
-    }
-
-    .name-chip {
-      display: flex;
-      align-items: center;
-      width: auto;
-      margin-bottom: 14px;
-      padding: 8px 20px 8px 16px;
-      border-radius: 50px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.28);
-      font-size: 25px;
-      font-weight: 800;
-      line-height: 1.2;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-    }
-
-    .name-icon {
-      display: inline-block;
-      margin-right: 12px;
-      text-align: center;
-      font-size: 26px;
-      line-height: 1; 
-    }
-
-    .class-prefix {
-      display: inline-block;
-      margin-right: 14px;
-      font-size: 22px;
-      opacity: .8;
-      font-weight: 700;
-      line-height: 1;
-    }
-
-    .quote {
-      font-size: 21px;
-      line-height: 1.5;
-      font-weight: 500;
-      color: #f5f5f5;
-      border-left: 4px solid #ff9800;
-      padding-left: 16px;
-      margin-top: 14px;
-      letter-spacing: 1px;
-      opacity: 0.95;
-      white-space: pre-wrap;
-    }
-
+    h1 { font-size: 30px; line-height: 1.25; margin: 0 0 6px; font-weight: 900; }
+    .subtitle { font-size: 20px; line-height: 1.45; font-weight: 500; opacity: .92; white-space: pre-wrap; }
+    .name-grid { display: flex; flex-direction: column; align-items: flex-start; margin-top: 12px; margin-bottom: 6px; }
+    .name-chip { display: flex; align-items: center; width: auto; margin-bottom: 14px; padding: 8px 20px 8px 16px; border-radius: 50px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.28); font-size: 25px; font-weight: 800; line-height: 1.2; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .name-icon { display: inline-block; margin-right: 12px; text-align: center; font-size: 26px; line-height: 1; }
+    .class-prefix { display: inline-block; margin-right: 14px; font-size: 22px; opacity: .8; font-weight: 700; line-height: 1; }
+    .quote { font-size: 21px; line-height: 1.5; font-weight: 500; color: #f5f5f5; border-left: 4px solid #ff9800; padding-left: 16px; margin-top: 14px; letter-spacing: 1px; opacity: 0.95; white-space: pre-wrap; }
     .quote-student { border-left-color: #4caf50; }
 
-    #marqueeWrap {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 12px;
-      height: 60px;
-      z-index: 30;
-      background: rgba(0,0,0,.86);
-      overflow: hidden;
-      display: flex;
-      align-items: center;
-      border-top: 2px solid rgba(255,255,255,.25);
-    }
-
-    #marquee {
-      white-space: nowrap;
-      font-size: 30px;
-      line-height: normal;
-      font-weight: 800;
-      padding-left: 100%;
-      animation: marquee 30s linear infinite;
-    }
-
-    @keyframes marquee {
-      from { transform: translateX(0); }
-      to { transform: translateX(-100%); }
-    }
+    #marqueeWrap { position: absolute; left: 0; right: 0; bottom: 12px; height: 60px; z-index: 30; background: rgba(0,0,0,.86); overflow: hidden; display: flex; align-items: center; border-top: 2px solid rgba(255,255,255,.25); }
+    #marquee { white-space: nowrap; font-size: 30px; line-height: normal; font-weight: 800; padding-left: 100%; animation: marquee 30s linear infinite; }
+    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
   </style>
 </head>
 
@@ -332,22 +111,19 @@
       <div>海佃地下圖書室</div>
       <div id="clock"></div>
     </div>
-
     <div id="slides"></div>
-
-    <div id="marqueeWrap">
-      <div id="marquee">Hidden below, growing beyond.</div>
-    </div>
+    <div id="marqueeWrap"><div id="marquee">Hidden below, growing beyond.</div></div>
   </div>
 
   <script>
     var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
-    var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '' };
+    var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '', acAlert: null };
     var slides = [];
     var current = 0;
     var timer = null;
     var rawDataCacheString = '';
+    var lastBeepTemp = null; // 用來記錄是否嗶過了
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
@@ -367,6 +143,7 @@
       rawData.volunteers = data.volunteers || [];
       rawData.studentVols = data.studentVols || [];
       rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
+      rawData.acAlert = data.acAlert || null; // 🌟 接收冷氣狀態
 
       document.getElementById('marquee').textContent = rawData.marquee;
       buildSlides();
@@ -381,7 +158,6 @@
       var mins = now.getHours() * 60 + now.getMinutes();
 
       var rawSlides = rawData.slides || [];
-      
       var luckySlide = null;
       var breakingNews = [];
       var posts = [];
@@ -424,8 +200,22 @@
       
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
 
-      if (luckySlide) {
-        slides.unshift(luckySlide);
+      // 🌟 1. 插入錢天堂幸運客
+      if (luckySlide) { slides.unshift(luckySlide); }
+
+      // 🌟 2. 插入冷氣通知 (如果有達標)
+      if (rawData.acAlert && rawData.acAlert.enabled && rawData.acAlert.temp !== null && rawData.acAlert.temp >= rawData.acAlert.threshold) {
+        var acSlide = {
+          type: 'ac-alert',
+          temp: rawData.acAlert.temp,
+          duration: 10 // 停留 10 秒
+        };
+        // 如果有幸運客，把冷氣通知插在幸運客後面；如果沒有，就放在第一張
+        if (luckySlide) {
+          slides.splice(1, 0, acSlide);
+        } else {
+          slides.unshift(acSlide);
+        }
       }
     }
 
@@ -440,6 +230,21 @@
       for (var i = 0; i < slides.length; i++) {
         var item = slides[i];
 
+        // 🌟 繪製冷氣提醒排版
+        if (item.type === 'ac-alert') {
+          html +=
+            '<div class="slide slide-ac">' +
+              '<div class="ac-bg"></div>' +
+              '<div class="ac-content">' +
+                '<div class="ac-badge">❄️ 氣溫達標，可以開冷氣囉！ ❄️</div>' +
+                '<div class="ac-temp">' + item.temp + '<span class="ac-unit">°C</span></div>' +
+                '<div class="ac-text">目前戶外氣溫已達 ' + item.temp + '°C<br>請適度開啟空調，保持圖書室舒適。</div>' +
+              '</div>' +
+            '</div>';
+          continue;
+        }
+
+        // 🌟 繪製錢天堂排版
         if (item.title && item.title.indexOf('錢天堂') > -1) {
           var styledText = escapeHtml(item.subtitle)
             .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
@@ -450,17 +255,14 @@
               '<div class="lucky-bg-full"></div>' +
               '<div class="lucky-overlay"></div>' +
               '<div class="lucky-content">' +
-                '<div class="lucky-badge">' +
-                  '<div class="premium-coin"></div>' + 
-                  '今日專屬幸運客' + 
-                  '<div class="premium-coin"></div>' +
-                '</div>' +
+                '<div class="lucky-badge"><div class="premium-coin"></div>今日專屬幸運客<div class="premium-coin"></div></div>' +
                 '<div class="lucky-text">' + styledText + '</div>' +
               '</div>' +
             '</div>';
           continue;
         }
 
+        // 一般排版
         var hasImage = !!item.image;
         var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
         var bg = '';
@@ -508,16 +310,39 @@
       clearTimeout(timer);
       timer = null;
       if (!slides.length) return;
+      
       var els = document.querySelectorAll('.slide');
       for (var i = 0; i < els.length; i++) {
         els[i].classList.remove('active');
         var v = els[i].querySelector('video');
         if (v) { v.pause(); v.currentTime = 0; }
       }
+      
       if (!els[current]) { current = 0; }
+      
       var activeSlide = els[current];
       activeSlide.classList.add('active');
-      var duration = Number(slides[current].duration || 12) * 1000;
+      
+      // 🌟 判斷是否為冷氣畫面，若是且溫度更新，則播放「嗶一聲」
+      var activeData = slides[current];
+      if (activeData && activeData.type === 'ac-alert') {
+        if (lastBeepTemp !== activeData.temp) {
+          lastBeepTemp = activeData.temp;
+          try {
+            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 880;
+            gain.gain.value = 0.08;
+            osc.start();
+            setTimeout(function() { osc.stop(); audioCtx.close(); }, 300);
+          } catch(e) {}
+        }
+      }
+
+      var duration = Number(activeData.duration || 12) * 1000;
       var videoEl = activeSlide.querySelector('video');
       var nextSlide = function() { current = (current + 1) % slides.length; play(); };
 
