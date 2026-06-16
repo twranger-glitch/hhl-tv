@@ -66,7 +66,10 @@
     }
     .ac-unit { font-size: 70px; vertical-align: super; }
     .ac-text {
-      font-size: 38px; line-height: 1.6; color: #b2ebf2; font-weight: 700;
+      font-size: 36px; line-height: 1.5; color: #b2ebf2; font-weight: 700; margin-bottom: 16px;
+    }
+    .ac-subtext {
+      font-size: 22px; color: rgba(178, 235, 242, 0.6); font-weight: 500; letter-spacing: 1px;
     }
 
     /* =========================================
@@ -123,7 +126,7 @@
     var current = 0;
     var timer = null;
     var rawDataCacheString = '';
-    var lastBeepTemp = null; // 用來記錄是否嗶過了
+    var lastBeepTemp = null; 
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
@@ -143,7 +146,7 @@
       rawData.volunteers = data.volunteers || [];
       rawData.studentVols = data.studentVols || [];
       rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
-      rawData.acAlert = data.acAlert || null; // 🌟 接收冷氣狀態
+      rawData.acAlert = data.acAlert || null; 
 
       document.getElementById('marquee').textContent = rawData.marquee;
       buildSlides();
@@ -200,17 +203,14 @@
       
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
 
-      // 🌟 1. 插入錢天堂幸運客
       if (luckySlide) { slides.unshift(luckySlide); }
 
-      // 🌟 2. 插入冷氣通知 (如果有達標)
       if (rawData.acAlert && rawData.acAlert.enabled && rawData.acAlert.temp !== null && rawData.acAlert.temp >= rawData.acAlert.threshold) {
         var acSlide = {
           type: 'ac-alert',
           temp: rawData.acAlert.temp,
-          duration: 10 // 停留 10 秒
+          duration: 10 
         };
-        // 如果有幸運客，把冷氣通知插在幸運客後面；如果沒有，就放在第一張
         if (luckySlide) {
           slides.splice(1, 0, acSlide);
         } else {
@@ -230,21 +230,20 @@
       for (var i = 0; i < slides.length; i++) {
         var item = slides[i];
 
-        // 🌟 繪製冷氣提醒排版
         if (item.type === 'ac-alert') {
           html +=
             '<div class="slide slide-ac">' +
               '<div class="ac-bg"></div>' +
               '<div class="ac-content">' +
-                '<div class="ac-badge">❄️ 氣溫達標，可以開冷氣囉！ ❄️</div>' +
+                '<div class="ac-badge">❄️ 氣溫達標，冷氣使用提醒 ❄️</div>' +
                 '<div class="ac-temp">' + item.temp + '<span class="ac-unit">°C</span></div>' +
-                '<div class="ac-text">目前戶外氣溫已達 ' + item.temp + '°C<br>請適度開啟空調，保持圖書室舒適。</div>' +
+                '<div class="ac-text">依市府氣象推估，目前戶外氣溫約 ' + item.temp + '°C</div>' +
+                '<div class="ac-subtext">( 如遇冷氣尚未供電，煩請聯繫總務處協助開啟 )</div>' +
               '</div>' +
             '</div>';
           continue;
         }
 
-        // 🌟 繪製錢天堂排版
         if (item.title && item.title.indexOf('錢天堂') > -1) {
           var styledText = escapeHtml(item.subtitle)
             .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
@@ -262,7 +261,6 @@
           continue;
         }
 
-        // 一般排版
         var hasImage = !!item.image;
         var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
         var bg = '';
@@ -323,7 +321,6 @@
       var activeSlide = els[current];
       activeSlide.classList.add('active');
       
-      // 🌟 判斷是否為冷氣畫面，若是且溫度更新，則播放「嗶一聲」
       var activeData = slides[current];
       if (activeData && activeData.type === 'ac-alert') {
         if (lastBeepTemp !== activeData.temp) {
