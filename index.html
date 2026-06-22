@@ -126,7 +126,9 @@
     var current = 0;
     var timer = null;
     var rawDataCacheString = '';
-    var lastBeepTemp = null; 
+    var AC_BEEP_LUNCH_START = 12 * 60; // 12:00 起進入午休靜音
+    var AC_BEEP_AFTERNOON_START = 13 * 60 + 35; // 13:35 起算下午
+    var acBeepFallback = {}; // localStorage 無法使用時的備援
 
     function loadData() {
       var oldScript = document.getElementById('jsonpScript');
@@ -322,20 +324,24 @@
       activeSlide.classList.add('active');
       
       var activeData = slides[current];
-      if (activeData && activeData.type === 'ac-alert') {
-        if (lastBeepTemp !== activeData.temp) {
-          lastBeepTemp = activeData.temp;
-          try {
-            var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 880;
-            gain.gain.value = 0.08;
-            osc.start();
-            setTimeout(function() { osc.stop(); audioCtx.close(); }, 300);
-          } catch(e) {}
+      var acThreshold = (rawData.acAlert && rawData.acAlert.threshold !== null)
+        ? Number(rawData.acAlert.threshold)
+        : 28;
+
+      if (activeData && activeData.type === 'ac-alert' && Number(activeData.temp) >= acThreshold) {
+        var now = new Date();
+        var mins = now.getHours() * 60 + now.getMinutes();
+
+        // 12:00～13:34 為午休：冷氣提醒照常顯示，但絕不播放嗶聲，
+        // 也不會消耗上午或下午的嗶聲額度。
+        if (mins >= AC_BEEP_LUNCH_START && mins < AC_BEEP_AFTERNOON_START) {
+          console.log('午休時間，冷氣提醒僅顯示畫面，靜音處理。');
+        } else {
+          var beepKey = getAcBeepKey(now);
+          if (!hasAcBeeped(beepKey)) {
+            markAcBeeped(beepKey);
+            playAcAlertBeep();
+          }
         }
       }
 
@@ -355,6 +361,49 @@
         videoEl.onended = nextSlide;
         videoEl.onerror = nextSlide;
       } else { timer = setTimeout(nextSlide, duration); }
+    }
+
+    // 同一天上午、下午各最多嗶一次；12:00～13:34 午休靜音，13:35 起算下午。
+    // key 會存進 localStorage，因此每小時自動重新載入頁面後也不會重複響。
+    function getAcBeepKey(now) {
+      var dateKey = now.getFullYear() + '-' +
+        ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+        ('0' + now.getDate()).slice(-2);
+      var mins = now.getHours() * 60 + now.getMinutes();
+      var period = mins >= AC_BEEP_AFTERNOON_START ? 'pm' : 'am';
+      return 'haidian-ac-alert-beep-' + dateKey + '-' + period;
+    }
+
+    function hasAcBeeped(key) {
+      try {
+        return localStorage.getItem(key) === '1';
+      } catch (e) {
+        return acBeepFallback[key] === true;
+      }
+    }
+
+    function markAcBeeped(key) {
+      acBeepFallback[key] = true;
+      try {
+        localStorage.setItem(key, '1');
+      } catch (e) {}
+    }
+
+    function playAcAlertBeep() {
+      try {
+        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        var osc = audioCtx.createOscillator();
+        var gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 880;
+        gain.gain.value = 0.08;
+        osc.start();
+        setTimeout(function() {
+          osc.stop();
+          audioCtx.close();
+        }, 300);
+      } catch(e) {}
     }
 
     function updateClock() {
