@@ -12,6 +12,11 @@
     4) 拿掉 Noto Sans TC 網路字型（中文字型檔很大，老電視下載和繪製都很慢），改用電視內建中文字型。
     5) 拿掉大面積 drop-shadow 濾鏡、transition: all 改成只做透明度與位移，跑馬燈改用 GPU 位移。
     6) 每 60 秒抓一次資料（原本 30 秒），後端溫度本來就是 5 分鐘更新一次。
+    7) 影片：在試算表「圖片網址」欄填影片網址即可，支援
+       - 直接的 .mp4 / .webm / .m4v 網址（最穩，建議把影片放在 tv.twranger.com/videos/ 底下）
+       - Google 雲端硬碟分享連結（需設為「知道連結的任何人」，檔案建議 100MB 以下）
+       - YouTube 連結（老電視不一定播得動；播放秒數照試算表「秒數」欄）
+       mp4 / 雲端硬碟影片會播完整支才換下一張；YouTube 則依「秒數」欄。
   -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
@@ -293,15 +298,18 @@
           '</div>';
       }
 
-      var hasImage = !!item.image;
-      var isVideo = hasImage && String(item.image).toLowerCase().indexOf('.mp4') > -1;
+      var media = mediaInfo(item.image);
+      var hasImage = media.kind === 'image';
+      var isVideo = media.kind === 'video' || media.kind === 'youtube';
       var bg = '';
       var mediaHtml = '';
 
-      if (isVideo) {
-        mediaHtml = '<video src="' + escapeAttr(item.image) + '" muted playsinline preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1;"></video>';
+      if (media.kind === 'video') {
+        mediaHtml = '<video src="' + escapeAttr(media.src) + '" muted playsinline preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1; background:#000;"></video>';
+      } else if (media.kind === 'youtube') {
+        mediaHtml = '<iframe data-yt="1" src="' + escapeAttr(media.src) + '" frameborder="0" allow="autoplay; encrypted-media" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0; z-index:1; background:#000;"></iframe>';
       } else if (hasImage) {
-        bg = "background-image:url('" + escapeAttr(item.image) + "')";
+        bg = "background-image:url('" + escapeAttr(media.src) + "')";
       }
 
       var badgeText = '圖書室消息';
@@ -332,8 +340,32 @@
       return '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
     }
 
+    // 判斷網址是圖片、影片檔還是 YouTube
+    function mediaInfo(url) {
+      var u = trimText(url);
+      if (!u) return { kind: 'none', src: '' };
+      var m = u.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([\w-]{11})/i);
+      if (m) {
+        return { kind: 'youtube', src: 'https://www.youtube.com/embed/' + m[1] +
+          '?autoplay=1&mute=1&controls=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=' + m[1] };
+      }
+      var d = u.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:.*&)?id=)([\w-]{20,})/i);
+      if (d) {
+        // 雲端硬碟：只有標成影片（網址含 #video 或檔名是影片）才當影片，其餘當圖片
+        var driveVideo = /#video|\.(mp4|webm|m4v)/i.test(u);
+        return driveVideo
+          ? { kind: 'video', src: 'https://drive.google.com/uc?export=download&id=' + d[1] }
+          : { kind: 'image', src: 'https://drive.google.com/thumbnail?id=' + d[1] + '&sz=w1920' };
+      }
+      if (/\.(mp4|webm|m4v)(\?|#|$)/i.test(u)) return { kind: 'video', src: u };
+      return { kind: 'image', src: u };
+    }
+
     function stopVideo(el) {
-      var v = el && el.querySelector ? el.querySelector('video') : null;
+      if (!el || !el.querySelector) return;
+      var f = el.querySelector('iframe');
+      if (f) { try { f.src = 'about:blank'; } catch (e) {} }
+      var v = el.querySelector('video');
       if (!v) return;
       try { v.pause(); } catch (e) {}
       try { v.removeAttribute('src'); v.load(); } catch (e) {}   // 釋放影片記憶體
@@ -365,9 +397,8 @@
 
       // 預載下一張圖片
       var nextItem = slides[(current + 1) % slides.length];
-      if (nextItem && nextItem.image && String(nextItem.image).toLowerCase().indexOf('.mp4') < 0) {
-        preloadImg.src = nextItem.image;
-      }
+      var nextMedia = nextItem ? mediaInfo(nextItem.image) : null;
+      if (nextMedia && nextMedia.kind === 'image') preloadImg.src = nextMedia.src;
 
       var activeData = slides[current];
       var acThreshold = (rawData.acAlert && rawData.acAlert.threshold !== null) ? Number(rawData.acAlert.threshold) : 28;
@@ -392,7 +423,12 @@
       };
 
       var videoEl = el.querySelector('video');
-      if (videoEl) {
+      var ytEl = el.querySelector('iframe');
+      if (ytEl) {
+        // YouTube 無法得知片長，依試算表「秒數」欄，沒填就播 30 秒
+        timer = setTimeout(nextSlide, (Number(activeData.duration) || 30) * 1000);
+      } else if (videoEl) {
+        videoEl.muted = true;
         try {
           var pr = videoEl.play();
           if (pr && typeof pr['catch'] === 'function') pr['catch'](function () {});
@@ -401,7 +437,8 @@
         var setVideoTimer = function () {
           clearTimeout(timer);
           var safeTime = (videoEl.duration * 1000) + 1000;
-          timer = setTimeout(nextSlide, (isNaN(safeTime) || !isFinite(safeTime)) ? 30000 : safeTime);
+          // 片長讀不到就播 30 秒；最長 10 分鐘，避免卡在一支影片
+          timer = setTimeout(nextSlide, (isNaN(safeTime) || !isFinite(safeTime)) ? 30000 : Math.min(safeTime, 600000));
         };
         if (videoEl.readyState >= 1) { setVideoTimer(); } else { videoEl.onloadedmetadata = setVideoTimer; }
         videoEl.onended = nextSlide;
