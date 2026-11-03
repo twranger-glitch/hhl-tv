@@ -411,7 +411,7 @@
 
     // ===== 全頁共用的影片播放器（整個網頁只會有這一個 <video>）=====
     var playerHideTimer = null;
-    function clearPlayerEvents(p) { p.onended = null; p.onerror = null; p.onloadedmetadata = null; }
+    function clearPlayerEvents(p) { p.onended = null; p.onerror = null; p.onloadedmetadata = null; p.ontimeupdate = null; }
 
     // 老 LG 的影片是畫在網頁「底下」的獨立影像層，播放器一旦被 display:none 藏起來再顯示，
     // 影像層常常接不回來（有聲音、畫面全黑）。所以播放器永遠保持顯示，靠上面不透明的投影片蓋住。
@@ -483,7 +483,16 @@
 
       t = setTimeout(done, 30000);   // 片長讀不到就播 30 秒
       if (p.readyState >= 1) setTimer(); else p.onloadedmetadata = setTimer;
-      p.onended = done;
+      // 關鍵：不要讓影片真的播到「結束」。老 LG 在 ended 之後會把解碼管線卸載，
+      // 下次 play() 就沒聲音也沒畫面。所以在最後 0.4 秒先暫停、直接換下一張，下次從頭播即可。
+      p.ontimeupdate = function () {
+        if (isFinite(p.duration) && p.duration > 1 && p.currentTime >= p.duration - 0.4) {
+          try { p.pause(); } catch (e) {}
+          dbg('near end, pause');
+          done();
+        }
+      };
+      p.onended = function () { dbg('ended (fallback)'); done(); };
       p.onerror = function () { dbg('error ' + (p.error ? p.error.code : '?')); p.removeAttribute('data-src'); done(); };
 
       safePlay(p);
@@ -610,7 +619,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：畫面左上角顯示播放器狀態（查黑屏用）
-    var PAGE_VERSION = '2026-11-03 影片重播修正版';
+    var PAGE_VERSION = '2026-11-03 影片重播修正版 v2';
     var dbgLines = [];
     function dbg(msg) {
       if (location.hash !== '#debug') return;
