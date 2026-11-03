@@ -17,30 +17,31 @@
        - Google 雲端硬碟分享連結（需設為「知道連結的任何人」，檔案建議 100MB 以下）
        - YouTube 連結（Chromium 80 以下的老電視會自動略過，避免黑畫面；播放秒數照試算表「秒數」欄）
        mp4 / 雲端硬碟影片會播完整支才換下一張；YouTube 則依「秒數」欄。
+       聲音：試算表「影片聲音」欄打勾才出聲，預設靜音。
   -->
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
- 
+
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%;
       overflow: hidden; background: #000;
       font-family: "Noto Sans TC", "Noto Sans CJK TC", "LG Smart UI", "Microsoft JhengHei", Arial, sans-serif;
     }
- 
+
     #screen {
       width: 100%; height: 100%; position: relative;
       overflow: hidden; color: white; background: #000;
     }
- 
+
     .topbar {
       position: absolute; top: 28px; left: 40px; right: 40px;
       z-index: 40; display: -webkit-flex; display: flex;
       -webkit-justify-content: space-between; justify-content: space-between;
       font-size: 28px; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,.8);
     }
- 
+
     #slides { width: 100%; height: 100%; position: relative; }
- 
+
     .slide {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       opacity: 0; -webkit-transition: opacity 1s ease; transition: opacity 1s ease;
@@ -49,13 +50,13 @@
     }
     .slide.active { opacity: 1; z-index: 2; }
     .slide.no-image { background: linear-gradient(135deg, #263238, #1565c0); }
- 
+
     .empty {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       box-sizing: border-box; padding-top: 40vh; text-align: center;
       font-size: 44px; background: linear-gradient(135deg, #263238, #1565c0);
     }
- 
+
     /* ❄️ 冷氣通知 */
     .slide-ac {
       background: linear-gradient(135deg, #002b5e 0%, #000212 100%);
@@ -84,7 +85,7 @@
     .ac-unit { font-size: 70px; vertical-align: super; }
     .ac-text { font-size: 36px; line-height: 1.5; color: #b2ebf2; font-weight: 700; margin-bottom: 16px; }
     .ac-subtext { font-size: 22px; color: rgba(178, 235, 242, 0.6); font-weight: 500; letter-spacing: 1px; }
- 
+
     /* 🌟 錢天堂幸運客 */
     .slide-lucky {
       background: #150a21; display: -webkit-flex; display: flex;
@@ -101,7 +102,7 @@
     .lucky-text { font-size: 30px; line-height: 1.5; color: #e0d8cc; white-space: pre-wrap; font-weight: 500; text-shadow: 0 2px 6px rgba(0,0,0,.9); }
     .highlight-stamp { display: inline-block; color: #d32f2f; background: #fdfaf3; border: 4px solid #d32f2f; padding: 8px 30px; border-radius: 6px; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 65px; font-weight: 900; letter-spacing: 8px; -webkit-transform: rotate(-3deg); transform: rotate(-3deg); box-shadow: 3px 3px 0px rgba(211, 47, 47, 0.2); margin: 10px 0 25px 0; text-shadow: none; }
     .highlight-book { display: inline-block; font-size: 58px; color: #fffde7; font-weight: 900; text-shadow: 0 0 15px rgba(255, 249, 196, 0.6); margin: 10px 0 20px 0; padding: 0 10px; letter-spacing: 2px; }
- 
+
     /* 一般投影片文字框 */
     .content {
       position: absolute; left: 6vw; bottom: 11vh; z-index: 25;
@@ -124,7 +125,7 @@
     .class-prefix { display: inline-block; margin-right: 14px; font-size: 22px; opacity: .8; font-weight: 700; line-height: 1; }
     .quote { font-size: 21px; line-height: 1.5; font-weight: 500; color: #f5f5f5; border-left: 4px solid #ff9800; padding-left: 16px; margin-top: 14px; letter-spacing: 1px; opacity: 0.95; white-space: pre-wrap; }
     .quote-student { border-left-color: #4caf50; }
- 
+
     #marqueeWrap { position: absolute; left: 0; right: 0; bottom: 12px; height: 60px; z-index: 30; background: rgba(0,0,0,.86); overflow: hidden; border-top: 2px solid rgba(255,255,255,.25); }
     #marquee {
       position: absolute; top: 0; left: 0; height: 60px; line-height: 60px;
@@ -136,7 +137,7 @@
     @keyframes marquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-100%,0,0); } }
   </style>
 </head>
- 
+
 <body>
   <div id="screen">
     <div class="topbar">
@@ -146,10 +147,10 @@
     <div id="slides"></div>
     <div id="marqueeWrap"><div id="marquee">Hidden below, growing beyond.</div></div>
   </div>
- 
+
   <script>
     var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
- 
+
     var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '', acAlert: null };
     var slides = [];          // 目前要輪播的投影片資料
     var slideHtml = [];       // 每張投影片的 HTML（需要時才放進畫面）
@@ -163,14 +164,14 @@
     var AC_BEEP_LUNCH_START = 12 * 60;           // 12:00 起進入午休靜音
     var AC_BEEP_AFTERNOON_START = 13 * 60 + 35;  // 13:35 起算下午
     var acBeepFallback = {};
- 
+
     function $(id) { return document.getElementById(id); }
- 
+
     // 老電視瀏覽器（Chromium 80 以下）YouTube 播放器只會黑畫面，直接略過 YouTube 投影片
     var CHROME_VER = (function () { var m = navigator.userAgent.match(/Chrome\/(\d+)/); return m ? Number(m[1]) : 0; })();
     var CAN_PLAY_YOUTUBE = CHROME_VER >= 80 || (!CHROME_VER && /Firefox|Safari/.test(navigator.userAgent));
- 
- 
+
+
     function loadData() {
       var oldScript = $('jsonpScript');
       if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
@@ -180,7 +181,7 @@
       script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
       document.body.appendChild(script);
     }
- 
+
     function handleData(data) {
       if (!data) return;
       // serverTime / updatedAt 每次都不同，比對時排除，避免每次都整頁重畫
@@ -198,16 +199,16 @@
       // 志工依時段出現，所以每次都重新計算；結果沒變就什麼都不做
       refreshSlides();
     }
- 
+
     function refreshSlides() {
       buildSlides();
       var sig = JSON.stringify(slides);
       if (sig === lastSlidesSig) return;
       lastSlidesSig = sig;
- 
+
       slideHtml = [];
       for (var i = 0; i < slides.length; i++) slideHtml.push(renderOne(slides[i]));
- 
+
       var box = $('slides');
       if (!slides.length) {
         clearTimeout(timer); timer = null; playToken++;
@@ -221,17 +222,17 @@
         play();
       }
     }
- 
+
     function buildSlides() {
       var now = new Date();
       var day = now.getDay();
       var mins = now.getHours() * 60 + now.getMinutes();
- 
+
       var rawSlides = rawData.slides || [];
       var luckySlide = null;
       var breakingNews = [];
       var posts = [];
- 
+
       for (var i = 0; i < rawSlides.length; i++) {
         if (rawSlides[i].title && rawSlides[i].title.indexOf('錢天堂') > -1) {
           luckySlide = rawSlides[i];
@@ -241,7 +242,7 @@
           posts.push(rawSlides[i]);
         }
       }
- 
+
       var mixedSlides = [];
       if (breakingNews.length > 0 && posts.length > 0) {
         for (var p = 0; p < posts.length; p++) {
@@ -249,7 +250,7 @@
           mixedSlides.push(breakingNews[p % breakingNews.length]);
         }
       } else { mixedSlides = posts.concat(breakingNews); }
- 
+
       var activeVols = [];
       for (var v = 0; v < rawData.volunteers.length; v++) {
         var item = rawData.volunteers[v];
@@ -257,7 +258,7 @@
           activeVols.push({ type: 'volunteer', title: item.name, subtitle: item.phrase, image: item.image, duration: item.duration });
         }
       }
- 
+
       var activeStudents = [];
       for (var s = 0; s < rawData.studentVols.length; s++) {
         var stu = rawData.studentVols[s];
@@ -265,7 +266,7 @@
           activeStudents.push({ type: 'studentVol', title: stu.name, classStr: stu.classStr, subtitle: stu.phrase || '圖書室小志工，為您服務！', image: stu.image, duration: stu.duration });
         }
       }
- 
+
       slides = mixedSlides.concat(activeVols).concat(activeStudents);
       if (!CAN_PLAY_YOUTUBE) {
         var playable = [];
@@ -275,14 +276,14 @@
         slides = playable;
       }
       if (luckySlide) { slides.unshift(luckySlide); }
- 
+
       var ac = rawData.acAlert;
       if (ac && ac.enabled && ac.temp !== null && ac.temp >= ac.threshold) {
         var acSlide = { type: 'ac-alert', temp: ac.temp, duration: 10 };
         if (luckySlide) { slides.splice(1, 0, acSlide); } else { slides.unshift(acSlide); }
       }
     }
- 
+
     function renderOne(item) {
       if (item.type === 'ac-alert') {
         return '<div class="slide slide-ac">' +
@@ -295,7 +296,7 @@
             '</div>' +
           '</div>';
       }
- 
+
       if (item.title && item.title.indexOf('錢天堂') > -1) {
         var styledText = escapeHtml(item.subtitle)
           .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
@@ -309,27 +310,27 @@
             '</div>' +
           '</div>';
       }
- 
+
       var media = mediaInfo(item.image);
       var hasImage = media.kind === 'image';
       var isVideo = media.kind === 'video' || media.kind === 'youtube';
       var bg = '';
       var mediaHtml = '';
- 
+
       if (media.kind === 'video') {
-        mediaHtml = '<video src="' + escapeAttr(media.src) + '" muted playsinline preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1; background:#000;"></video>';
+        mediaHtml = '<video src="' + escapeAttr(media.src) + '"' + (item.sound ? '' : ' muted') + ' playsinline preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1; background:#000;"></video>';
       } else if (media.kind === 'youtube') {
         mediaHtml = '<iframe data-yt="1" src="' + escapeAttr(media.src) + '" frameborder="0" allow="autoplay; encrypted-media" style="position:absolute; top:0; left:0; width:100%; height:100%; border:0; z-index:1; background:#000;"></iframe>';
       } else if (hasImage) {
         bg = "background-image:url('" + escapeAttr(media.src) + "')";
       }
- 
+
       var badgeText = '圖書室消息';
       var badgeClass = '';
       if (item.type === 'breaking') { badgeText = '號外插播'; badgeClass = 'badge-breaking'; }
       else if (item.type === 'volunteer') { badgeText = '今日值班志工'; badgeClass = 'badge-volunteer'; }
       else if (item.type === 'studentVol') { badgeText = '今日小志工'; badgeClass = 'badge-student'; }
- 
+
       var bodyHtml = '';
       if (item.type === 'volunteer' || item.type === 'studentVol') {
         var names = String(item.title || '').split(/[\n、,，]+/);
@@ -347,11 +348,11 @@
       } else if (trimText(item.title) !== '') {
         bodyHtml = '<h1>' + escapeHtml(item.title) + '</h1><div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
       }
- 
+
       var contentHtml = bodyHtml !== '' ? '<div class="content"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>' : '';
       return '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
     }
- 
+
     // 判斷網址是圖片、影片檔還是 YouTube
     function mediaInfo(url) {
       var u = trimText(url);
@@ -369,10 +370,11 @@
           ? { kind: 'video', src: 'https://drive.google.com/uc?export=download&id=' + d[1] }
           : { kind: 'image', src: 'https://drive.google.com/thumbnail?id=' + d[1] + '&sz=w1920' };
       }
-      if (/\.(mp4|webm|m4v)(\?|#|$)/i.test(u)) return { kind: 'video', src: u };
+      // 一般網址：副檔名是影片，或網址最後加了 #video，就當影片播放
+      if (/\.(mp4|webm|m4v|mov)(\?|#|$)/i.test(u) || /#video$/i.test(u)) return { kind: 'video', src: u.replace(/#video$/i, '') };
       return { kind: 'image', src: u };
     }
- 
+
     function stopVideo(el) {
       if (!el || !el.querySelector) return;
       var f = el.querySelector('iframe');
@@ -382,14 +384,14 @@
       try { v.pause(); } catch (e) {}
       try { v.removeAttribute('src'); v.load(); } catch (e) {}   // 釋放影片記憶體
     }
- 
+
     function play() {
       clearTimeout(timer);
       timer = null;
       var token = ++playToken;
       if (!slides.length) return;
       if (current >= slides.length) current = 0;
- 
+
       // 只把「這一張」放進畫面，上一張淡出後移除
       var box = $('slides');
       var holder = document.createElement('div');
@@ -398,7 +400,7 @@
       box.appendChild(el);
       void el.offsetWidth;                 // 讓淡入動畫生效
       el.className += ' active';
- 
+
       var old = activeEl;
       activeEl = el;
       if (old) {
@@ -406,15 +408,15 @@
         stopVideo(old);
         setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 1100);
       }
- 
+
       // 預載下一張圖片
       var nextItem = slides[(current + 1) % slides.length];
       var nextMedia = nextItem ? mediaInfo(nextItem.image) : null;
       if (nextMedia && nextMedia.kind === 'image') preloadImg.src = nextMedia.src;
- 
+
       var activeData = slides[current];
       var acThreshold = (rawData.acAlert && rawData.acAlert.threshold !== null) ? Number(rawData.acAlert.threshold) : 28;
- 
+
       if (activeData && activeData.type === 'ac-alert' && Number(activeData.temp) >= acThreshold) {
         var now = new Date();
         var mins = now.getHours() * 60 + now.getMinutes();
@@ -427,23 +429,32 @@
           }
         }
       }
- 
+
       var nextSlide = function () {
         if (token !== playToken) return;   // 避免影片結束和計時器重複觸發
         current = (current + 1) % slides.length;
         play();
       };
- 
+
       var videoEl = el.querySelector('video');
       var ytEl = el.querySelector('iframe');
       if (ytEl) {
         // YouTube 無法得知片長，依試算表「秒數」欄，沒填就播 30 秒
         timer = setTimeout(nextSlide, (Number(activeData.duration) || 30) * 1000);
       } else if (videoEl) {
-        videoEl.muted = true;
+        // 試算表「影片聲音」打勾才出聲；新版電腦瀏覽器若擋下有聲自動播放，就改成靜音繼續播
+        videoEl.muted = !activeData.sound;
+        videoEl.volume = 1;
         try {
           var pr = videoEl.play();
-          if (pr && typeof pr['catch'] === 'function') pr['catch'](function () {});
+          if (pr && typeof pr['catch'] === 'function') {
+            pr['catch'](function () {
+              if (!videoEl.muted) {
+                videoEl.muted = true;
+                try { var pr2 = videoEl.play(); if (pr2 && pr2['catch']) pr2['catch'](function () {}); } catch (e) {}
+              }
+            });
+          }
         } catch (e) {}
         timer = setTimeout(nextSlide, 30000);
         var setVideoTimer = function () {
@@ -459,7 +470,7 @@
         timer = setTimeout(nextSlide, (Number(activeData.duration) || 12) * 1000);
       }
     }
- 
+
     // 同一天上午、下午各最多嗶一次
     function getAcBeepKey(now) {
       var dateKey = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
@@ -473,7 +484,7 @@
       acBeepFallback[key] = true;
       try { localStorage.setItem(key, '1'); } catch (e) {}
     }
- 
+
     var audioCtx = null;   // 共用一個，不要每次新建（舊瀏覽器有數量上限）
     function playAcAlertBeep() {
       try {
@@ -490,17 +501,17 @@
         }, 300);
       } catch (e) {}
     }
- 
+
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
     function updateClock() {
       var d = new Date();
       $('clock').textContent = pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
     }
- 
+
     function escapeHtml(str) { return String(str === 0 ? '0' : (str || '')).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
     function escapeAttr(str) { return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22'); }
     function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
- 
+
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     if (location.hash === '#ua') {
       var uaBox = document.createElement('div');
@@ -508,7 +519,7 @@
       uaBox.textContent = navigator.userAgent + '  ｜ YouTube：' + (CAN_PLAY_YOUTUBE ? '可播' : '略過');
       $('screen').appendChild(uaBox);
     }
- 
+
     updateClock();
     setInterval(updateClock, 15000);
     loadData();
@@ -517,4 +528,3 @@
   </script>
 </body>
 </html>
- 
