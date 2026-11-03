@@ -3,15 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>Haidian Hidden Library</title>
-
+  <!--
+    2026-11-03 LG UH5F 老電視效能版（版面與功能和原本相同）
+    1) 修正「每 30 秒整頁重畫」：後端每次都回傳新的 serverTime / updatedAt，
+       原本的比對永遠不同，所以每 30 秒把所有投影片、圖片全部重建一次。現在只在內容真的變了才更新，也不會打斷正在播的那張。
+    2) 畫面上同時只放 2 張投影片（目前這張 + 淡出中的上一張），不再把所有大圖一次塞進記憶體；下一張圖先預載。
+    3) 舊瀏覽器相容：video.play() 在舊版不會回傳 Promise，原本的 .catch() 會讓輪播卡死在影片那張；filter / transform 補上 -webkit- 前綴。
+    4) 拿掉 Noto Sans TC 網路字型（中文字型檔很大，老電視下載和繪製都很慢），改用電視內建中文字型。
+    5) 拿掉大面積 drop-shadow 濾鏡、transition: all 改成只做透明度與位移，跑馬燈改用 GPU 位移。
+    6) 每 60 秒抓一次資料（原本 30 秒），後端溫度本來就是 5 分鐘更新一次。
+  -->
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
     @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
 
     html, body {
       margin: 0; padding: 0; width: 100%; height: 100%;
       overflow: hidden; background: #000;
-      font-family: "Noto Sans TC", "Microsoft JhengHei", Arial, sans-serif;
+      font-family: "Noto Sans TC", "Noto Sans CJK TC", "LG Smart UI", "Microsoft JhengHei", Arial, sans-serif;
     }
 
     #screen {
@@ -21,90 +29,106 @@
 
     .topbar {
       position: absolute; top: 28px; left: 40px; right: 40px;
-      z-index: 40; display: flex; justify-content: space-between;
-      font-size: 28px; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,.8);
+      z-index: 40; display: -webkit-flex; display: flex;
+      -webkit-justify-content: space-between; justify-content: space-between;
+      font-size: 28px; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,.8);
     }
 
     #slides { width: 100%; height: 100%; position: relative; }
 
     .slide {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      opacity: 0; transition: opacity 1s ease;
-      background-size: contain; background-position: center;
+      opacity: 0; -webkit-transition: opacity 1s ease; transition: opacity 1s ease;
+      -webkit-background-size: contain; background-size: contain; background-position: center;
       background-repeat: no-repeat; background-color: #000;
     }
     .slide.active { opacity: 1; z-index: 2; }
     .slide.no-image { background: linear-gradient(135deg, #263238, #1565c0); }
 
-    /* =========================================
-       ❄️ 冷氣通知專屬排版 ❄️
-       ========================================= */
+    .empty {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      box-sizing: border-box; padding-top: 40vh; text-align: center;
+      font-size: 44px; background: linear-gradient(135deg, #263238, #1565c0);
+    }
+
+    /* ❄️ 冷氣通知 */
     .slide-ac {
       background: linear-gradient(135deg, #002b5e 0%, #000212 100%);
-      display: flex; align-items: center; justify-content: center; z-index: 10;
+      display: -webkit-flex; display: flex;
+      -webkit-align-items: center; align-items: center;
+      -webkit-justify-content: center; justify-content: center; z-index: 10;
     }
+    .slide-ac.active { z-index: 10; }
     .ac-bg {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: radial-gradient(circle at top right, rgba(0, 210, 255, 0.25) 0%, transparent 50%),
                   radial-gradient(circle at bottom left, rgba(58, 123, 213, 0.25) 0%, transparent 50%);
       z-index: 1;
     }
-    .ac-content {
-      position: relative; z-index: 20; text-align: center;
-      filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.6));
-    }
+    .ac-content { position: relative; z-index: 20; text-align: center; }
     .ac-badge {
       display: inline-block; background: #00d2ff; color: #00132b;
       padding: 10px 35px; border-radius: 50px; font-size: 34px;
       font-weight: 900; margin-bottom: 30px; letter-spacing: 4px;
-      box-shadow: 0 0 30px rgba(0, 210, 255, 0.4);
     }
     .ac-temp {
       font-size: 150px; font-weight: 900; color: #ffffff;
-      text-shadow: 0 0 40px rgba(0, 210, 255, 0.8);
+      text-shadow: 0 0 30px rgba(0, 210, 255, 0.8);
       line-height: 1; margin-bottom: 25px;
     }
     .ac-unit { font-size: 70px; vertical-align: super; }
-    .ac-text {
-      font-size: 36px; line-height: 1.5; color: #b2ebf2; font-weight: 700; margin-bottom: 16px;
-    }
-    .ac-subtext {
-      font-size: 22px; color: rgba(178, 235, 242, 0.6); font-weight: 500; letter-spacing: 1px;
-    }
+    .ac-text { font-size: 36px; line-height: 1.5; color: #b2ebf2; font-weight: 700; margin-bottom: 16px; }
+    .ac-subtext { font-size: 22px; color: rgba(178, 235, 242, 0.6); font-weight: 500; letter-spacing: 1px; }
 
-    /* =========================================
-       🌟 錢天堂幸運客：復古印章魔法排版 🌟
-       ========================================= */
-    .slide-lucky { background: #150a21; display: flex; align-items: center; justify-content: center; z-index: 10; }
-    .lucky-bg-full { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('images/grocery.png'); background-size: cover; background-position: center; opacity: 0.45; z-index: 1; }
+    /* 🌟 錢天堂幸運客 */
+    .slide-lucky {
+      background: #150a21; display: -webkit-flex; display: flex;
+      -webkit-align-items: center; align-items: center;
+      -webkit-justify-content: center; justify-content: center; z-index: 10;
+    }
+    .slide-lucky.active { z-index: 10; }
+    .lucky-bg-full { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('images/grocery.png'); -webkit-background-size: cover; background-size: cover; background-position: center; opacity: 0.45; z-index: 1; }
     .lucky-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(15,8,30,0.1) 0%, rgba(10,4,20,0.85) 100%); z-index: 2; }
-    .lucky-content { position: relative; z-index: 20; width: 90%; max-width: 1400px; text-align: center; filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.9)); }
-    .lucky-badge { display: inline-flex; align-items: center; background: linear-gradient(to bottom, #ffd700, #b8860b); color: #1a0b2e; padding: 10px 35px; border-radius: 50px; font-size: 34px; font-weight: 900; margin-bottom: 25px; letter-spacing: 4px; box-shadow: 0 0 30px rgba(255,215,0,0.3); }
-    .premium-coin { display: inline-block; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(ellipse at 30% 30%, #fff1b8 0%, #fadb14 30%, #d48806 80%, #874d00 100%); border: 2px solid #fffbe6; box-shadow: inset 0 0 4px rgba(255,255,255,0.8), inset 2px 2px 5px rgba(255,255,255,0.5), inset -2px -2px 5px rgba(0,0,0,0.4), 0 4px 8px rgba(0,0,0,0.5); margin: 0 15px; position: relative; }
-    .premium-coin::after { content: '錢'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -48%); font-size: 22px; font-weight: 900; color: #fffbe6; text-shadow: 1px 1px 2px rgba(135, 77, 0, 0.8); }
-    .lucky-text { font-size: 30px; line-height: 1.5; color: #e0d8cc; white-space: pre-wrap; font-weight: 500; }
-    .highlight-stamp { display: inline-block; color: #d32f2f; background: #fdfaf3; border: 4px solid #d32f2f; padding: 8px 30px; border-radius: 6px; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 65px; font-weight: 900; letter-spacing: 8px; transform: rotate(-3deg); box-shadow: 3px 3px 0px rgba(211, 47, 47, 0.2), 0 10px 20px rgba(0,0,0,0.6); margin: 10px 0 25px 0; }
-    .highlight-book { display: inline-block; font-size: 58px; color: #fffde7; font-weight: 900; text-shadow: 0 0 15px rgba(255, 249, 196, 0.6), 0 0 30px rgba(255, 215, 0, 0.3); margin: 10px 0 20px 0; padding: 0 10px; letter-spacing: 2px; }
+    .lucky-content { position: relative; z-index: 20; width: 90%; max-width: 1400px; text-align: center; }
+    .lucky-badge { display: inline-block; background: linear-gradient(to bottom, #ffd700, #b8860b); color: #1a0b2e; padding: 10px 35px; border-radius: 50px; font-size: 34px; font-weight: 900; margin-bottom: 25px; letter-spacing: 4px; line-height: 40px; }
+    .premium-coin { display: inline-block; vertical-align: middle; width: 40px; height: 40px; border-radius: 50%; background: radial-gradient(ellipse at 30% 30%, #fff1b8 0%, #fadb14 30%, #d48806 80%, #874d00 100%); border: 2px solid #fffbe6; margin: 0 15px; position: relative; }
+    .premium-coin:after { content: '錢'; position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%, -48%); transform: translate(-50%, -48%); font-size: 22px; line-height: 1; font-weight: 900; color: #fffbe6; text-shadow: 1px 1px 2px rgba(135, 77, 0, 0.8); }
+    .lucky-text { font-size: 30px; line-height: 1.5; color: #e0d8cc; white-space: pre-wrap; font-weight: 500; text-shadow: 0 2px 6px rgba(0,0,0,.9); }
+    .highlight-stamp { display: inline-block; color: #d32f2f; background: #fdfaf3; border: 4px solid #d32f2f; padding: 8px 30px; border-radius: 6px; font-family: 'Courier Prime', 'Courier New', monospace; font-size: 65px; font-weight: 900; letter-spacing: 8px; -webkit-transform: rotate(-3deg); transform: rotate(-3deg); box-shadow: 3px 3px 0px rgba(211, 47, 47, 0.2); margin: 10px 0 25px 0; text-shadow: none; }
+    .highlight-book { display: inline-block; font-size: 58px; color: #fffde7; font-weight: 900; text-shadow: 0 0 15px rgba(255, 249, 196, 0.6); margin: 10px 0 20px 0; padding: 0 10px; letter-spacing: 2px; }
 
-    /* ========================================= */
-    .content { position: absolute; left: 6vw; bottom: 11vh; z-index: 25; background: rgba(0,0,0,.68); padding: 14px 18px 16px; border-radius: 12px; box-sizing: border-box; max-width: 46vw; opacity: 0; transform: translateY(20px); transition: all 0.8s ease; }
-    .slide.active .content { opacity: 1; transform: translateY(0); }
+    /* 一般投影片文字框 */
+    .content {
+      position: absolute; left: 6vw; bottom: 11vh; z-index: 25;
+      background: rgba(0,0,0,.68); padding: 14px 18px 16px; border-radius: 12px;
+      box-sizing: border-box; max-width: 46vw;
+      opacity: 0; -webkit-transform: translateY(20px); transform: translateY(20px);
+      -webkit-transition: opacity .8s ease, -webkit-transform .8s ease;
+      transition: opacity .8s ease, transform .8s ease;
+    }
+    .slide.active .content { opacity: 1; -webkit-transform: translateY(0); transform: translateY(0); }
     .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 18px; font-weight: 900; margin-bottom: 8px; letter-spacing: 1px; background: #00bcd4; color: #fff; }
     .badge-breaking { background: #d32f2f; }
     .badge-volunteer { background: #f57c00; }
     .badge-student { background: #388e3c; }
     h1 { font-size: 30px; line-height: 1.25; margin: 0 0 6px; font-weight: 900; }
     .subtitle { font-size: 20px; line-height: 1.45; font-weight: 500; opacity: .92; white-space: pre-wrap; }
-    .name-grid { display: flex; flex-direction: column; align-items: flex-start; margin-top: 12px; margin-bottom: 6px; }
-    .name-chip { display: flex; align-items: center; width: auto; margin-bottom: 14px; padding: 8px 20px 8px 16px; border-radius: 50px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.28); font-size: 25px; font-weight: 800; line-height: 1.2; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+    .name-grid { margin-top: 12px; margin-bottom: 6px; }
+    .name-chip { display: table; margin-bottom: 14px; padding: 8px 20px 8px 16px; border-radius: 50px; background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.28); font-size: 25px; font-weight: 800; line-height: 1.2; white-space: nowrap; }
     .name-icon { display: inline-block; margin-right: 12px; text-align: center; font-size: 26px; line-height: 1; }
     .class-prefix { display: inline-block; margin-right: 14px; font-size: 22px; opacity: .8; font-weight: 700; line-height: 1; }
     .quote { font-size: 21px; line-height: 1.5; font-weight: 500; color: #f5f5f5; border-left: 4px solid #ff9800; padding-left: 16px; margin-top: 14px; letter-spacing: 1px; opacity: 0.95; white-space: pre-wrap; }
     .quote-student { border-left-color: #4caf50; }
 
-    #marqueeWrap { position: absolute; left: 0; right: 0; bottom: 12px; height: 60px; z-index: 30; background: rgba(0,0,0,.86); overflow: hidden; display: flex; align-items: center; border-top: 2px solid rgba(255,255,255,.25); }
-    #marquee { white-space: nowrap; font-size: 30px; line-height: normal; font-weight: 800; padding-left: 100%; animation: marquee 30s linear infinite; }
-    @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+    #marqueeWrap { position: absolute; left: 0; right: 0; bottom: 12px; height: 60px; z-index: 30; background: rgba(0,0,0,.86); overflow: hidden; border-top: 2px solid rgba(255,255,255,.25); }
+    #marquee {
+      position: absolute; top: 0; left: 0; height: 60px; line-height: 60px;
+      white-space: nowrap; font-size: 30px; font-weight: 800; padding-left: 100%;
+      will-change: transform;
+      -webkit-animation: marquee 30s linear infinite; animation: marquee 30s linear infinite;
+    }
+    @-webkit-keyframes marquee { from { -webkit-transform: translate3d(0,0,0); } to { -webkit-transform: translate3d(-100%,0,0); } }
+    @keyframes marquee { from { transform: translate3d(0,0,0); } to { transform: translate3d(-100%,0,0); } }
   </style>
 </head>
 
@@ -122,39 +146,70 @@
     var GAS_API_URL = 'https://script.google.com/a/macros/go.edu.tw/s/AKfycbwSAYrzs4Mc9oEGnJYFqd-bOZ8PJ3dYrXdutp5b3TniGzWt56uYXLiRDRFPGe-7n_lN/exec';
 
     var rawData = { slides: [], volunteers: [], studentVols: [], marquee: '', acAlert: null };
-    var slides = [];
+    var slides = [];          // 目前要輪播的投影片資料
+    var slideHtml = [];       // 每張投影片的 HTML（需要時才放進畫面）
     var current = 0;
     var timer = null;
-    var rawDataCacheString = '';
-    var AC_BEEP_LUNCH_START = 12 * 60; // 12:00 起進入午休靜音
-    var AC_BEEP_AFTERNOON_START = 13 * 60 + 35; // 13:35 起算下午
-    var acBeepFallback = {}; // localStorage 無法使用時的備援
+    var playToken = 0;
+    var activeEl = null;
+    var lastRawSig = '';
+    var lastSlidesSig = '';
+    var preloadImg = new Image();
+    var AC_BEEP_LUNCH_START = 12 * 60;           // 12:00 起進入午休靜音
+    var AC_BEEP_AFTERNOON_START = 13 * 60 + 35;  // 13:35 起算下午
+    var acBeepFallback = {};
+
+    function $(id) { return document.getElementById(id); }
 
     function loadData() {
-      var oldScript = document.getElementById('jsonpScript');
+      var oldScript = $('jsonpScript');
       if (oldScript) { oldScript.parentNode.removeChild(oldScript); }
       var script = document.createElement('script');
       script.id = 'jsonpScript';
+      script.onerror = function () {};   // 抓不到就繼續播舊資料
       script.src = GAS_API_URL + '?callback=handleData&t=' + new Date().getTime();
       document.body.appendChild(script);
     }
 
     function handleData(data) {
-      var newDataString = JSON.stringify(data);
-      if (rawDataCacheString === newDataString) { return; }
-      rawDataCacheString = newDataString; 
+      if (!data) return;
+      // serverTime / updatedAt 每次都不同，比對時排除，避免每次都整頁重畫
+      var sig = JSON.stringify([data.slides, data.volunteers, data.studentVols, data.marquee, data.acAlert]);
+      if (sig !== lastRawSig) {
+        lastRawSig = sig;
+        rawData.slides = data.slides || [];
+        rawData.volunteers = data.volunteers || [];
+        rawData.studentVols = data.studentVols || [];
+        rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
+        rawData.acAlert = data.acAlert || null;
+        var m = $('marquee');
+        if (m.textContent !== rawData.marquee) m.textContent = rawData.marquee;
+      }
+      // 志工依時段出現，所以每次都重新計算；結果沒變就什麼都不做
+      refreshSlides();
+    }
 
-      rawData.slides = data.slides || [];
-      rawData.volunteers = data.volunteers || [];
-      rawData.studentVols = data.studentVols || [];
-      rawData.marquee = data.marquee || 'Hidden below, growing beyond.';
-      rawData.acAlert = data.acAlert || null; 
-
-      document.getElementById('marquee').textContent = rawData.marquee;
+    function refreshSlides() {
       buildSlides();
-      if (current >= slides.length) { current = 0; }
-      renderSlides();
-      play();
+      var sig = JSON.stringify(slides);
+      if (sig === lastSlidesSig) return;
+      lastSlidesSig = sig;
+
+      slideHtml = [];
+      for (var i = 0; i < slides.length; i++) slideHtml.push(renderOne(slides[i]));
+
+      var box = $('slides');
+      if (!slides.length) {
+        clearTimeout(timer); timer = null; playToken++;
+        activeEl = null;
+        box.innerHTML = '<div class="empty">目前沒有可播放的消息</div>';
+        return;
+      }
+      if (current >= slides.length) current = 0;
+      if (!activeEl) {           // 第一次（或從空白恢復）才立刻播放；其餘照原本節奏換到新內容
+        box.innerHTML = '';
+        play();
+      }
     }
 
     function buildSlides() {
@@ -169,21 +224,19 @@
 
       for (var i = 0; i < rawSlides.length; i++) {
         if (rawSlides[i].title && rawSlides[i].title.indexOf('錢天堂') > -1) {
-          luckySlide = rawSlides[i]; 
-        } else if (rawSlides[i].type === 'breaking') { 
-          breakingNews.push(rawSlides[i]); 
-        } else { 
-          posts.push(rawSlides[i]); 
+          luckySlide = rawSlides[i];
+        } else if (rawSlides[i].type === 'breaking') {
+          breakingNews.push(rawSlides[i]);
+        } else {
+          posts.push(rawSlides[i]);
         }
       }
 
       var mixedSlides = [];
       if (breakingNews.length > 0 && posts.length > 0) {
-        var breakIndex = 0;
         for (var p = 0; p < posts.length; p++) {
           mixedSlides.push(posts[p]);
-          mixedSlides.push(breakingNews[breakIndex % breakingNews.length]);
-          breakIndex++;
+          mixedSlides.push(breakingNews[p % breakingNews.length]);
         }
       } else { mixedSlides = posts.concat(breakingNews); }
 
@@ -202,141 +255,128 @@
           activeStudents.push({ type: 'studentVol', title: stu.name, classStr: stu.classStr, subtitle: stu.phrase || '圖書室小志工，為您服務！', image: stu.image, duration: stu.duration });
         }
       }
-      
-      slides = mixedSlides.concat(activeVols).concat(activeStudents);
 
+      slides = mixedSlides.concat(activeVols).concat(activeStudents);
       if (luckySlide) { slides.unshift(luckySlide); }
 
-      if (rawData.acAlert && rawData.acAlert.enabled && rawData.acAlert.temp !== null && rawData.acAlert.temp >= rawData.acAlert.threshold) {
-        var acSlide = {
-          type: 'ac-alert',
-          temp: rawData.acAlert.temp,
-          duration: 10 
-        };
-        if (luckySlide) {
-          slides.splice(1, 0, acSlide);
-        } else {
-          slides.unshift(acSlide);
-        }
+      var ac = rawData.acAlert;
+      if (ac && ac.enabled && ac.temp !== null && ac.temp >= ac.threshold) {
+        var acSlide = { type: 'ac-alert', temp: ac.temp, duration: 10 };
+        if (luckySlide) { slides.splice(1, 0, acSlide); } else { slides.unshift(acSlide); }
       }
     }
 
-    function renderSlides() {
-      var box = document.getElementById('slides');
-      if (!slides.length) {
-        box.innerHTML = '<div class="empty">目前沒有可播放的消息</div>';
-        return;
+    function renderOne(item) {
+      if (item.type === 'ac-alert') {
+        return '<div class="slide slide-ac">' +
+            '<div class="ac-bg"></div>' +
+            '<div class="ac-content">' +
+              '<div class="ac-badge">❄️ 氣溫達標，冷氣使用提醒 ❄️</div>' +
+              '<div class="ac-temp">' + escapeHtml(item.temp) + '<span class="ac-unit">°C</span></div>' +
+              '<div class="ac-text">依市府氣象推估，目前戶外氣溫約 ' + escapeHtml(item.temp) + '°C</div>' +
+              '<div class="ac-subtext">( 如遇冷氣尚未供電，煩請聯繫總務處協助開啟 )</div>' +
+            '</div>' +
+          '</div>';
       }
 
-      var html = '';
-      for (var i = 0; i < slides.length; i++) {
-        var item = slides[i];
-
-        if (item.type === 'ac-alert') {
-          html +=
-            '<div class="slide slide-ac">' +
-              '<div class="ac-bg"></div>' +
-              '<div class="ac-content">' +
-                '<div class="ac-badge">❄️ 氣溫達標，冷氣使用提醒 ❄️</div>' +
-                '<div class="ac-temp">' + item.temp + '<span class="ac-unit">°C</span></div>' +
-                '<div class="ac-text">依市府氣象推估，目前戶外氣溫約 ' + item.temp + '°C</div>' +
-                '<div class="ac-subtext">( 如遇冷氣尚未供電，煩請聯繫總務處協助開啟 )</div>' +
-              '</div>' +
-            '</div>';
-          continue;
-        }
-
-        if (item.title && item.title.indexOf('錢天堂') > -1) {
-          var styledText = escapeHtml(item.subtitle)
-            .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
-            .replace(/【(.*?)】/g, '<span class="highlight-stamp">$1</span>');
-
-          html +=
-            '<div class="slide slide-lucky">' +
-              '<div class="lucky-bg-full"></div>' +
-              '<div class="lucky-overlay"></div>' +
-              '<div class="lucky-content">' +
-                '<div class="lucky-badge"><div class="premium-coin"></div>今日專屬幸運客<div class="premium-coin"></div></div>' +
-                '<div class="lucky-text">' + styledText + '</div>' +
-              '</div>' +
-            '</div>';
-          continue;
-        }
-
-        var hasImage = !!item.image;
-        var isVideo = hasImage && item.image.toLowerCase().indexOf('.mp4') > -1;
-        var bg = '';
-        var mediaHtml = '';
-
-        if (isVideo) {
-          mediaHtml = '<video src="' + escapeAttr(item.image) + '" muted playsinline style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1;"></video>';
-        } else if (hasImage) {
-          bg = "background-image:url('" + escapeAttr(item.image) + "')";
-        }
-
-        var badgeText = '圖書室消息';
-        var badgeClass = '';
-        if (item.type === 'breaking') { badgeText = '號外插播'; badgeClass = 'badge-breaking'; }
-        else if (item.type === 'volunteer') { badgeText = '今日值班志工'; badgeClass = 'badge-volunteer'; }
-        else if (item.type === 'studentVol') { badgeText = '今日小志工'; badgeClass = 'badge-student'; }
-
-        var bodyHtml = '';
-        if (item.type === 'volunteer' || item.type === 'studentVol') {
-          var names = String(item.title || '').split(/[\n、,，]+/);
-          var chips = '';
-          for (var n = 0; n < names.length; n++) {
-            var name = trimText(names[n]);
-            if (!name) continue;
-            var icon = item.type === 'volunteer' ? '❤' : '📖';
-            var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
-            var classText = (item.type === 'studentVol' && item.classStr) ? '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>' : '';
-            chips += '<div class="name-chip"><span class="name-icon" style="color:'+iconColor+';">' + icon + '</span>' + classText + '<span>' + escapeHtml(name) + '</span></div>';
-          }
-          var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
-          bodyHtml = '<div class="name-grid">' + chips + '</div>' + (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
-        } else {
-          if(trimText(item.title) !== "") {
-              bodyHtml = '<h1>' + escapeHtml(item.title) + '</h1><div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
-          }
-        }
-
-        var contentHtml = bodyHtml !== '' ? '<div class="content" style="z-index:25;"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>' : '';
-        html += '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
+      if (item.title && item.title.indexOf('錢天堂') > -1) {
+        var styledText = escapeHtml(item.subtitle)
+          .replace(/《(.*?)》/g, '<span class="highlight-book">《$1》</span>')
+          .replace(/【(.*?)】/g, '<span class="highlight-stamp">$1</span>');
+        return '<div class="slide slide-lucky">' +
+            '<div class="lucky-bg-full"></div>' +
+            '<div class="lucky-overlay"></div>' +
+            '<div class="lucky-content">' +
+              '<div class="lucky-badge"><span class="premium-coin"></span>今日專屬幸運客<span class="premium-coin"></span></div>' +
+              '<div class="lucky-text">' + styledText + '</div>' +
+            '</div>' +
+          '</div>';
       }
-      box.innerHTML = html;
+
+      var hasImage = !!item.image;
+      var isVideo = hasImage && String(item.image).toLowerCase().indexOf('.mp4') > -1;
+      var bg = '';
+      var mediaHtml = '';
+
+      if (isVideo) {
+        mediaHtml = '<video src="' + escapeAttr(item.image) + '" muted playsinline preload="auto" style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:1;"></video>';
+      } else if (hasImage) {
+        bg = "background-image:url('" + escapeAttr(item.image) + "')";
+      }
+
+      var badgeText = '圖書室消息';
+      var badgeClass = '';
+      if (item.type === 'breaking') { badgeText = '號外插播'; badgeClass = 'badge-breaking'; }
+      else if (item.type === 'volunteer') { badgeText = '今日值班志工'; badgeClass = 'badge-volunteer'; }
+      else if (item.type === 'studentVol') { badgeText = '今日小志工'; badgeClass = 'badge-student'; }
+
+      var bodyHtml = '';
+      if (item.type === 'volunteer' || item.type === 'studentVol') {
+        var names = String(item.title || '').split(/[\n、,，]+/);
+        var chips = '';
+        for (var n = 0; n < names.length; n++) {
+          var name = trimText(names[n]);
+          if (!name) continue;
+          var icon = item.type === 'volunteer' ? '❤' : '📖';
+          var iconColor = item.type === 'volunteer' ? '#ffb74d' : '#81c784';
+          var classText = (item.type === 'studentVol' && item.classStr) ? '<span class="class-prefix">' + escapeHtml(item.classStr) + '</span>' : '';
+          chips += '<div class="name-chip"><span class="name-icon" style="color:' + iconColor + ';">' + icon + '</span>' + classText + '<span>' + escapeHtml(name) + '</span></div>';
+        }
+        var quoteClass = item.type === 'studentVol' ? ' quote-student' : '';
+        bodyHtml = '<div class="name-grid">' + chips + '</div>' + (item.subtitle ? '<div class="quote' + quoteClass + '">' + escapeHtml(item.subtitle) + '</div>' : '');
+      } else if (trimText(item.title) !== '') {
+        bodyHtml = '<h1>' + escapeHtml(item.title) + '</h1><div class="subtitle">' + escapeHtml(item.subtitle || '') + '</div>';
+      }
+
+      var contentHtml = bodyHtml !== '' ? '<div class="content"><div class="badge ' + badgeClass + '">' + badgeText + '</div>' + bodyHtml + '</div>' : '';
+      return '<div class="slide ' + (hasImage && !isVideo ? '' : 'no-image') + '" style="' + bg + '">' + mediaHtml + contentHtml + '</div>';
+    }
+
+    function stopVideo(el) {
+      var v = el && el.querySelector ? el.querySelector('video') : null;
+      if (!v) return;
+      try { v.pause(); } catch (e) {}
+      try { v.removeAttribute('src'); v.load(); } catch (e) {}   // 釋放影片記憶體
     }
 
     function play() {
       clearTimeout(timer);
       timer = null;
+      var token = ++playToken;
       if (!slides.length) return;
-      
-      var els = document.querySelectorAll('.slide');
-      for (var i = 0; i < els.length; i++) {
-        els[i].classList.remove('active');
-        var v = els[i].querySelector('video');
-        if (v) { v.pause(); v.currentTime = 0; }
+      if (current >= slides.length) current = 0;
+
+      // 只把「這一張」放進畫面，上一張淡出後移除
+      var box = $('slides');
+      var holder = document.createElement('div');
+      holder.innerHTML = slideHtml[current];
+      var el = holder.firstChild;
+      box.appendChild(el);
+      void el.offsetWidth;                 // 讓淡入動畫生效
+      el.className += ' active';
+
+      var old = activeEl;
+      activeEl = el;
+      if (old) {
+        old.className = old.className.replace(/\s*active/g, '');
+        stopVideo(old);
+        setTimeout(function () { if (old.parentNode) old.parentNode.removeChild(old); }, 1100);
       }
-      
-      if (!els[current]) { current = 0; }
-      
-      var activeSlide = els[current];
-      activeSlide.classList.add('active');
-      
+
+      // 預載下一張圖片
+      var nextItem = slides[(current + 1) % slides.length];
+      if (nextItem && nextItem.image && String(nextItem.image).toLowerCase().indexOf('.mp4') < 0) {
+        preloadImg.src = nextItem.image;
+      }
+
       var activeData = slides[current];
-      var acThreshold = (rawData.acAlert && rawData.acAlert.threshold !== null)
-        ? Number(rawData.acAlert.threshold)
-        : 28;
+      var acThreshold = (rawData.acAlert && rawData.acAlert.threshold !== null) ? Number(rawData.acAlert.threshold) : 28;
 
       if (activeData && activeData.type === 'ac-alert' && Number(activeData.temp) >= acThreshold) {
         var now = new Date();
         var mins = now.getHours() * 60 + now.getMinutes();
-
-        // 12:00～13:34 為午休：冷氣提醒照常顯示，但絕不播放嗶聲，
-        // 也不會消耗上午或下午的嗶聲額度。
-        if (mins >= AC_BEEP_LUNCH_START && mins < AC_BEEP_AFTERNOON_START) {
-          console.log('午休時間，冷氣提醒僅顯示畫面，靜音處理。');
-        } else {
+        // 12:00～13:34 午休：只顯示畫面，不嗶聲，也不消耗上午/下午的額度
+        if (!(mins >= AC_BEEP_LUNCH_START && mins < AC_BEEP_AFTERNOON_START)) {
           var beepKey = getAcBeepKey(now);
           if (!hasAcBeeped(beepKey)) {
             markAcBeeped(beepKey);
@@ -345,81 +385,78 @@
         }
       }
 
-      var duration = Number(activeData.duration || 12) * 1000;
-      var videoEl = activeSlide.querySelector('video');
-      var nextSlide = function() { current = (current + 1) % slides.length; play(); };
+      var nextSlide = function () {
+        if (token !== playToken) return;   // 避免影片結束和計時器重複觸發
+        current = (current + 1) % slides.length;
+        play();
+      };
 
+      var videoEl = el.querySelector('video');
       if (videoEl) {
-        videoEl.play().catch(function(e){ console.log(e); });
+        try {
+          var pr = videoEl.play();
+          if (pr && typeof pr['catch'] === 'function') pr['catch'](function () {});
+        } catch (e) {}
         timer = setTimeout(nextSlide, 30000);
-        var setVideoTimer = function() {
+        var setVideoTimer = function () {
           clearTimeout(timer);
           var safeTime = (videoEl.duration * 1000) + 1000;
-          timer = setTimeout(nextSlide, isNaN(safeTime) ? 30000 : safeTime);
+          timer = setTimeout(nextSlide, (isNaN(safeTime) || !isFinite(safeTime)) ? 30000 : safeTime);
         };
         if (videoEl.readyState >= 1) { setVideoTimer(); } else { videoEl.onloadedmetadata = setVideoTimer; }
         videoEl.onended = nextSlide;
         videoEl.onerror = nextSlide;
-      } else { timer = setTimeout(nextSlide, duration); }
-    }
-
-    // 同一天上午、下午各最多嗶一次；12:00～13:34 午休靜音，13:35 起算下午。
-    // key 會存進 localStorage，因此每小時自動重新載入頁面後也不會重複響。
-    function getAcBeepKey(now) {
-      var dateKey = now.getFullYear() + '-' +
-        ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
-        ('0' + now.getDate()).slice(-2);
-      var mins = now.getHours() * 60 + now.getMinutes();
-      var period = mins >= AC_BEEP_AFTERNOON_START ? 'pm' : 'am';
-      return 'haidian-ac-alert-beep-' + dateKey + '-' + period;
-    }
-
-    function hasAcBeeped(key) {
-      try {
-        return localStorage.getItem(key) === '1';
-      } catch (e) {
-        return acBeepFallback[key] === true;
+      } else {
+        timer = setTimeout(nextSlide, (Number(activeData.duration) || 12) * 1000);
       }
     }
 
+    // 同一天上午、下午各最多嗶一次
+    function getAcBeepKey(now) {
+      var dateKey = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate());
+      var mins = now.getHours() * 60 + now.getMinutes();
+      return 'haidian-ac-alert-beep-' + dateKey + '-' + (mins >= AC_BEEP_AFTERNOON_START ? 'pm' : 'am');
+    }
+    function hasAcBeeped(key) {
+      try { return localStorage.getItem(key) === '1'; } catch (e) { return acBeepFallback[key] === true; }
+    }
     function markAcBeeped(key) {
       acBeepFallback[key] = true;
-      try {
-        localStorage.setItem(key, '1');
-      } catch (e) {}
+      try { localStorage.setItem(key, '1'); } catch (e) {}
     }
 
+    var audioCtx = null;   // 共用一個，不要每次新建（舊瀏覽器有數量上限）
     function playAcAlertBeep() {
       try {
-        var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         var osc = audioCtx.createOscillator();
         var gain = audioCtx.createGain();
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.frequency.value = 880;
         gain.gain.value = 0.08;
-        osc.start();
-        setTimeout(function() {
-          osc.stop();
-          audioCtx.close();
+        if (osc.start) osc.start(0); else osc.noteOn(0);
+        setTimeout(function () {
+          try { if (osc.stop) osc.stop(0); else osc.noteOff(0); } catch (e) {}
         }, 300);
-      } catch(e) {}
+      } catch (e) {}
     }
 
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
     function updateClock() {
-      var now = new Date();
-      document.getElementById('clock').textContent = now.toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      var d = new Date();
+      $('clock').textContent = pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
     }
 
-    function escapeHtml(str) { return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
+    function escapeHtml(str) { return String(str === 0 ? '0' : (str || '')).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'); }
     function escapeAttr(str) { return String(str || '').replace(/'/g, '%27').replace(/"/g, '%22'); }
     function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
 
     updateClock();
-    setInterval(updateClock, 10000);
+    setInterval(updateClock, 15000);
     loadData();
-    setInterval(loadData, 30 * 1000);
-    setInterval(function() { location.reload(); }, 60 * 60 * 1000);
+    setInterval(loadData, 60 * 1000);
+    setTimeout(function () { location.reload(); }, 60 * 60 * 1000);
   </script>
 </body>
 </html>
