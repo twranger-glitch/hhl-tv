@@ -56,7 +56,7 @@
     .slide.video-slide { background: transparent; }
     #player {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      z-index: 1; background: #000; object-fit: contain; display: none;
+      z-index: 1; background: #000; object-fit: contain;
     }
 
     .empty {
@@ -411,15 +411,16 @@
 
     // ===== 全頁共用的影片播放器（整個網頁只會有這一個 <video>）=====
     var playerHideTimer = null;
-    function clearPlayerEvents(p) { p.onended = null; p.onerror = null; p.onloadedmetadata = null; }
+    function clearPlayerEvents(p) { p.onended = null; p.onerror = null; p.onloadedmetadata = null; p.ontimeupdate = null; }
 
+    // 老 LG 的影片是畫在網頁「底下」的獨立影像層，播放器一旦被 display:none 藏起來再顯示，
+    // 影像層常常接不回來（有聲音、畫面全黑）。所以播放器永遠保持顯示，靠上面不透明的投影片蓋住。
+    var playerWatch = null;
     function stopPlayer() {
       var p = $('player');
       clearPlayerEvents(p);
+      clearTimeout(playerWatch);
       try { p.pause(); } catch (e) {}
-      clearTimeout(playerHideTimer);
-      // 等下一張淡入蓋住之後再藏起來；網址保留，下次同一支影片直接從頭播，不重新要解碼器
-      playerHideTimer = setTimeout(function () { p.style.display = 'none'; }, 1100);
     }
 
     function releasePlayer() {   // 只在整頁重新整理前呼叫，把解碼器還給電視
@@ -428,31 +429,7 @@
       try { p.pause(); p.removeAttribute('src'); p.load(); } catch (e) {}
     }
 
-    function playVideo(src, sound, onDone) {
-      var p = $('player');
-      clearTimeout(playerHideTimer);
-      clearPlayerEvents(p);
-      p.muted = !sound;
-      p.volume = 1;
-      if (p.getAttribute('data-src') !== src) {
-        p.setAttribute('data-src', src);
-        p.src = src;
-      } else {
-        try { p.currentTime = 0; } catch (e) {}
-      }
-      p.style.display = 'block';
-
-      var t = setTimeout(onDone, 30000);   // 片長讀不到就播 30 秒
-      var setTimer = function () {
-        clearTimeout(t);
-        var ms = (p.duration * 1000) + 1000;
-        t = setTimeout(onDone, (isNaN(ms) || !isFinite(ms)) ? 30000 : Math.min(ms, 600000));
-        timer = t;
-      };
-      if (p.readyState >= 1) setTimer(); else p.onloadedmetadata = setTimer;
-      p.onended = function () { clearTimeout(t); onDone(); };
-      p.onerror = function () { clearTimeout(t); p.removeAttribute('data-src'); onDone(); };
-
+    function safePlay(p) {
       try {
         var pr = p.play();
         if (pr && typeof pr['catch'] === 'function') {
@@ -465,6 +442,73 @@
           });
         }
       } catch (e) {}
+    }
+
+    function hardLoad(p, src) {
+      try { p.pause(); } catch (e) {}
+      try { p.removeAttribute('src'); p.load(); } catch (e) {}
+      p.setAttribute('data-src', src);
+      p.src = src;
+      try { p.load(); } catch (e) {}
+    }
+
+    function playVideo(src, sound, onDone) {
+      var p = $('player');
+      clearPlayerEvents(p);
+      clearTimeout(playerWatch);
+      p.muted = !sound;
+      p.volume = 1;
+
+      var finished = false;
+      var t = null;
+      var done = function () {
+        if (finished) return;
+        finished = true;
+        clearTimeout(t); clearTimeout(playerWatch);
+        onDone();
+      };
+      var setTimer = function () {
+        clearTimeout(t);
+        var ms = (p.duration * 1000) + 1500;
+        t = setTimeout(done, (isNaN(ms) || !isFinite(ms)) ? 30000 : Math.min(ms, 600000));
+        timer = t;
+      };
+
+      if (p.getAttribute('data-src') !== src) {
+        hardLoad(p, src);
+      } else {
+        try { p.currentTime = 0; } catch (e) { hardLoad(p, src); }
+      }
+      dbg('play ' + src.split('/').pop());
+
+      t = setTimeout(done, 30000);   // 片長讀不到就播 30 秒
+      if (p.readyState >= 1) setTimer(); else p.onloadedmetadata = setTimer;
+      // 關鍵：不要讓影片真的播到「結束」。老 LG 在 ended 之後會把解碼管線卸載，
+      // 下次 play() 就沒聲音也沒畫面。所以在最後 0.4 秒先暫停、直接換下一張，下次從頭播即可。
+      p.ontimeupdate = function () {
+        if (isFinite(p.duration) && p.duration > 1 && p.currentTime >= p.duration - 0.4) {
+          try { p.pause(); } catch (e) {}
+          dbg('near end, pause');
+          done();
+        }
+      };
+      p.onended = function () { dbg('ended (fallback)'); done(); };
+      p.onerror = function () { dbg('error ' + (p.error ? p.error.code : '?')); p.removeAttribute('data-src'); done(); };
+
+      safePlay(p);
+
+      // 看門狗：5 秒後畫面時間沒有前進，就整支重新載入再播一次；再 10 秒還不動就跳下一張
+      var startAt = p.currentTime || 0;
+      playerWatch = setTimeout(function () {
+        if (finished || p.currentTime > startAt + 0.3) return;
+        dbg('stuck, reload');
+        hardLoad(p, src);
+        p.onloadedmetadata = setTimer;
+        safePlay(p);
+        playerWatch = setTimeout(function () {
+          if (!finished && p.currentTime < 0.3) { dbg('still stuck, skip'); p.removeAttribute('data-src'); done(); }
+        }, 10000);
+      }, 5000);
       return t;
     }
 
@@ -574,6 +618,31 @@
     function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
+    // 網址最後加上 #debug：畫面左上角顯示播放器狀態（查黑屏用）
+    var PAGE_VERSION = '2026-11-03 影片重播修正版 v2';
+    var dbgLines = [];
+    function dbg(msg) {
+      if (location.hash !== '#debug') return;
+      var d = new Date();
+      dbgLines.unshift(pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + msg);
+      if (dbgLines.length > 6) dbgLines.length = 6;
+    }
+    if (location.hash === '#debug') {
+      var dbgBox = document.createElement('div');
+      dbgBox.style.cssText = 'position:absolute;top:80px;left:40px;z-index:99;background:rgba(0,0,0,.85);color:#0f0;font:20px/1.4 monospace;padding:10px;white-space:pre;';
+      $('screen').appendChild(dbgBox);
+      setInterval(function () {
+        var p = $('player');
+        dbgBox.textContent = PAGE_VERSION + '\n' +
+          'ready=' + p.readyState + ' net=' + p.networkState + ' t=' + (p.currentTime || 0).toFixed(1) +
+          '/' + (isFinite(p.duration) ? p.duration.toFixed(0) : '?') + ' paused=' + p.paused + ' muted=' + p.muted +
+          ' err=' + (p.error ? p.error.code : '-') + '\n' + dbgLines.join('\n');
+      }, 1000);
+      ['playing', 'waiting', 'stalled', 'ended', 'emptied', 'suspend'].forEach(function (ev) {
+        $('player').addEventListener(ev, function () { dbg('ev ' + ev); });
+      });
+    }
+
     if (location.hash === '#ua') {
       var uaBox = document.createElement('div');
       uaBox.style.cssText = 'position:absolute;top:80px;left:40px;right:40px;z-index:99;background:#000;color:#0f0;font-size:20px;padding:10px;';
