@@ -472,6 +472,7 @@
         if (st.log.length > 6) st.log.length = 6;
         saveStats(st);
         dbg('next: ' + why);
+        tvLog((ok ? '成功 ' : '失敗 ') + src.split('/').pop() + '｜' + why + '｜距上次放開' + gap + '秒｜累計成功' + st.ok + '失敗' + st.fail + '｜ready=' + p.readyState + ' net=' + p.networkState);
         onDone();
       };
       p.onended = function () { done('ended'); };
@@ -488,6 +489,7 @@
           // 完全沒拿到資料：換一個新網址再試一次
           retried = true; stuckSecs = 0;
           dbg('no data, retry load');
+          tvLog('沒拿到資料，重試 ' + src.split('/').pop());
           try { p.src = freshUrl(src); p.load(); var rp = p.play(); if (rp && rp.catch) rp.catch(function () {}); } catch (e) {}
           return;
         }
@@ -537,6 +539,15 @@
       var st = loadStats(), d = new Date(st.since);
       return '── 從 ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ' 起：影片成功 ' + st.ok + ' 次、失敗 ' + st.fail + ' 次、重新整理 ' + st.reloads + ' 次\n' +
         (st.log.length ? st.log.join('\n') + '\n' : '') + '── 最近紀錄';
+    }
+    // 老電視把播放紀錄送回 Google 試算表「TV紀錄」工作表（不用走去電視前拍照）
+    function tvLog(msg) {
+      if (!(CHROME_VER > 0 && CHROME_VER < 80) && location.hash !== '#debug') return;
+      try {
+        var img = new Image();
+        img.src = GAS_API_URL + '?action=log&v=' + encodeURIComponent(PAGE_VERSION) +
+          '&msg=' + encodeURIComponent(msg) + '&t=' + new Date().getTime();
+      } catch (e) {}
     }
     function clockStr() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 
@@ -650,7 +661,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v6 偵錯統計';
+    var PAGE_VERSION = '2026-11-04 v7 紀錄送雲端';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = true;
@@ -703,6 +714,7 @@
           localStorage.removeItem('hhl_stats');   // 不是影片後接續 → 統計重新開始
           localStorage.removeItem('hhl_dbg'); dbgLines = [];
           dbg('fresh page load');
+          tvLog('網頁重新開啟（開機或每小時重整）｜' + navigator.userAgent.slice(0, 120));
         }
         if (r && new Date().getTime() - r.at < 5 * 60 * 1000) {
           current = Number(r.next) || 0;
