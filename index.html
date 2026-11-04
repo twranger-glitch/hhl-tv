@@ -577,14 +577,18 @@
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
     var PAGE_VERSION = '2026-11-04 偵錯版（播放邏輯同 #4）';
+    // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
+    // 查完問題後，把下面的 true 改成 false 就會關掉。
+    var DEBUG_ON_OLD_TV = true;
+    var DEBUG = location.hash === '#debug' || (DEBUG_ON_OLD_TV && CHROME_VER > 0 && CHROME_VER < 80);
     var dbgLines = [];
     function dbg(msg) {
-      if (location.hash !== '#debug') return;
+      if (!DEBUG) return;
       var d = new Date();
       dbgLines.unshift(pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + msg);
       if (dbgLines.length > 8) dbgLines.length = 8;
     }
-    if (location.hash === '#debug') {
+    if (DEBUG) {
       var dbgBox = document.createElement('div');
       dbgBox.style.cssText = 'position:absolute;top:80px;left:40px;z-index:99;background:rgba(0,0,0,.85);color:#0f0;font:20px/1.4 monospace;padding:10px;white-space:pre;';
       $('screen').appendChild(dbgBox);
