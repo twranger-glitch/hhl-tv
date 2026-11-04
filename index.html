@@ -454,7 +454,7 @@
       try { p.pause(); } catch (e) {}
       try { p.removeAttribute('src'); p.load(); } catch (e) {}
       p.setAttribute('data-src', src);
-      p.src = freshUrl(src);
+      p.src = src;   // 第一次用原本網址（網頁剛打開時這樣最穩）；拿不到資料時重試才加 ?v=
       try { p.load(); } catch (e) {}
       p.style.display = 'block';
       dbg('load+play ' + src.split('/').pop() + (sound ? ' (聲音)' : ' (靜音)'));
@@ -661,7 +661,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v7 紀錄送雲端';
+    var PAGE_VERSION = '2026-11-04 v8 原網址+紀錄';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = true;
