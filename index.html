@@ -441,8 +441,9 @@
         try { p.currentTime = 0; } catch (e) {}
       }
       p.style.display = 'block';
+      dbg('play ' + src.split('/').pop() + (sound ? ' (聲音)' : ' (靜音)'));
 
-      var t = setTimeout(onDone, 30000);   // 片長讀不到就播 30 秒
+      var t = setTimeout(function () { dbg('timeout 30s'); onDone(); }, 30000);   // 片長讀不到就播 30 秒
       var setTimer = function () {
         clearTimeout(t);
         var ms = (p.duration * 1000) + 1000;
@@ -450,8 +451,8 @@
         timer = t;
       };
       if (p.readyState >= 1) setTimer(); else p.onloadedmetadata = setTimer;
-      p.onended = function () { clearTimeout(t); onDone(); };
-      p.onerror = function () { clearTimeout(t); p.removeAttribute('data-src'); onDone(); };
+      p.onended = function () { dbg('ended'); clearTimeout(t); onDone(); };
+      p.onerror = function () { dbg('ERROR code=' + (p.error ? p.error.code : '?') + ' at t=' + (p.currentTime || 0).toFixed(1)); clearTimeout(t); p.removeAttribute('data-src'); onDone(); };
 
       try {
         var pr = p.play();
@@ -574,6 +575,35 @@
     function trimText(str) { return String(str || '').replace(/^\s+|\s+$/g, ''); }
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
+    // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
+    var PAGE_VERSION = '2026-11-04 偵錯版（播放邏輯同 #4）';
+    var dbgLines = [];
+    function dbg(msg) {
+      if (location.hash !== '#debug') return;
+      var d = new Date();
+      dbgLines.unshift(pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + ' ' + msg);
+      if (dbgLines.length > 8) dbgLines.length = 8;
+    }
+    if (location.hash === '#debug') {
+      var dbgBox = document.createElement('div');
+      dbgBox.style.cssText = 'position:absolute;top:80px;left:40px;z-index:99;background:rgba(0,0,0,.85);color:#0f0;font:20px/1.4 monospace;padding:10px;white-space:pre;';
+      $('screen').appendChild(dbgBox);
+      setInterval(function () {
+        var p = $('player');
+        var buf = '';
+        try { for (var i = 0; i < p.buffered.length; i++) buf += p.buffered.start(i).toFixed(0) + '-' + p.buffered.end(i).toFixed(0) + ' '; } catch (e) {}
+        dbgBox.textContent = PAGE_VERSION + '\n' +
+          '投影片 ' + (current + 1) + '/' + slides.length + '  ready=' + p.readyState + ' net=' + p.networkState +
+          ' 時間=' + (p.currentTime || 0).toFixed(1) + '/' + (isFinite(p.duration) ? p.duration.toFixed(0) : '?') +
+          ' paused=' + p.paused + ' muted=' + p.muted + ' err=' + (p.error ? p.error.code : '-') + '\n' +
+          '已下載=' + (buf || '無') + '\n' + dbgLines.join('\n');
+      }, 1000);
+      var evs = ['playing', 'waiting', 'stalled', 'ended', 'emptied', 'suspend', 'abort', 'seeked'];
+      for (var e = 0; e < evs.length; e++) {
+        (function (ev) { $('player').addEventListener(ev, function () { dbg('ev ' + ev + ' t=' + ($('player').currentTime || 0).toFixed(1)); }); })(evs[e]);
+      }
+    }
+
     if (location.hash === '#ua') {
       var uaBox = document.createElement('div');
       uaBox.style.cssText = 'position:absolute;top:80px;left:40px;right:40px;z-index:99;background:#000;color:#0f0;font-size:20px;padding:10px;';
