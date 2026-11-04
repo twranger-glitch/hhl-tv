@@ -192,6 +192,7 @@
 
     function handleData(data) {
       if (!data) return;
+      try { localStorage.setItem('hhl_cache', JSON.stringify(data)); } catch (e) {}
       // serverTime / updatedAt 每次都不同，比對時排除，避免每次都整頁重畫
       var sig = JSON.stringify([data.slides, data.volunteers, data.studentVols, data.marquee, data.acAlert]);
       if (sig !== lastRawSig) {
@@ -502,6 +503,19 @@
       return null;
     }
 
+    // 老 LG 實測：同一個網頁裡，影片只有「第一次」播得出來；第二次起不管怎麼重新載入，
+    // 電視都拿不到資料（ready=0、已下載 0-0）。但網頁剛打開時的第一次播放永遠正常。
+    // 所以在老電視上：影片播完就把解碼器還給電視、記住下一張，然後整頁重新整理。
+    // 重新整理後先用上次存下的資料立刻顯示，從下一張接著播，看起來只是換頁。
+    var RELOAD_AFTER_VIDEO = (CHROME_VER > 0 && CHROME_VER < 80) || location.hash.indexOf('reload') >= 0;
+    function reloadAfterVideo(nextIndex) {
+      try { localStorage.setItem('hhl_resume', JSON.stringify({ next: nextIndex, at: new Date().getTime() })); } catch (e) {}
+      dbg('reload page, next=' + (nextIndex + 1));
+      saveDbg();
+      releasePlayer();
+      setTimeout(function () { location.reload(); }, 300);
+    }
+
     function play() {
       clearTimeout(timer);
       timer = null;
@@ -557,7 +571,10 @@
       var ytEl = el.querySelector('iframe');
       if (!videoSrc) stopPlayer();
       if (videoSrc) {
-        timer = playVideo(videoSrc, el.getAttribute('data-sound') === '1', nextSlide);
+        timer = playVideo(videoSrc, el.getAttribute('data-sound') === '1', RELOAD_AFTER_VIDEO ? function () {
+          if (token !== playToken) return;
+          reloadAfterVideo((current + 1) % slides.length);
+        } : nextSlide);
       } else if (ytEl) {
         // YouTube 無法得知片長，依試算表「秒數」欄，沒填就播 30 秒
         timer = setTimeout(nextSlide, (Number(activeData.duration) || 30) * 1000);
@@ -609,12 +626,14 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v4 影片網址加時間戳';
+    var PAGE_VERSION = '2026-11-04 v5 影片播完重新整理網頁';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = true;
     var DEBUG = location.hash === '#debug' || (DEBUG_ON_OLD_TV && CHROME_VER > 0 && CHROME_VER < 80);
     var dbgLines = [];
+    try { if (DEBUG) dbgLines = JSON.parse(localStorage.getItem('hhl_dbg') || '[]'); } catch (e) { dbgLines = []; }
+    function saveDbg() { try { if (DEBUG) localStorage.setItem('hhl_dbg', JSON.stringify(dbgLines)); } catch (e) {} }
     function dbg(msg) {
       if (!DEBUG) return;
       var d = new Date();
@@ -650,6 +669,19 @@
 
     updateClock();
     setInterval(updateClock, 15000);
+    // 影片播完重新整理後：從下一張接著播，並先用上次的資料立刻顯示
+    (function () {
+      try {
+        var r = JSON.parse(localStorage.getItem('hhl_resume') || 'null');
+        localStorage.removeItem('hhl_resume');
+        if (r && new Date().getTime() - r.at < 5 * 60 * 1000) {
+          current = Number(r.next) || 0;
+          dbg('page reloaded, resume at ' + (current + 1));
+          var c = JSON.parse(localStorage.getItem('hhl_cache') || 'null');
+          if (c) handleData(c);
+        }
+      } catch (e) {}
+    })();
     loadData();
     setInterval(loadData, 60 * 1000);
     setTimeout(function () { releasePlayer(); location.reload(); }, 60 * 60 * 1000);
