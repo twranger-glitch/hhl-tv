@@ -474,6 +474,7 @@
         dbg('next: ' + why);
         tvLog((ok ? '成功 ' : '失敗 ') + src.split('/').pop() + '｜' + why + '｜距上次放開' + gap + '秒｜累計成功' + st.ok + '失敗' + st.fail + '｜ready=' + p.readyState + ' net=' + p.networkState + '｜事件:' + evBuf.join(','));
         evBuf = [];
+        if (!ok) probeUrl(src);
         onDone();
       };
       p.onended = function () { done('ended'); };
@@ -526,7 +527,13 @@
       var st = loadStats(); st.lastRelease = new Date().getTime(); st.reloads++; saveStats(st);
       saveDbg();
       // 多等 2 秒，讓電視真的把解碼器收回去再重新整理
-      setTimeout(function () { location.reload(); }, 2000);
+      // 網路測試還在跑就等它（最多 16 秒），讓結果送得出去
+      var waited = 0;
+      var tryReload = function () {
+        if (probePending && waited < 16000) { waited += 500; setTimeout(tryReload, 500); return; }
+        location.reload();
+      };
+      setTimeout(tryReload, 2000);
     }
 
     // 影片成功/失敗統計（存在電視裡，重新整理不會不見；網頁「非接續」打開時歸零）
@@ -549,6 +556,28 @@
         img.src = GAS_API_URL + '?action=log&v=' + encodeURIComponent(PAGE_VERSION) +
           '&msg=' + encodeURIComponent(msg) + '&t=' + new Date().getTime();
       } catch (e) {}
+    }
+    // 影片失敗時，改用一般網路下載（不經過電視的影片播放器）抓檔案前 64KB，
+    // 分辨是「網路/伺服器抓不到」還是「電視播放器卡住」
+    var probePending = false;
+    function probeUrl(src) {
+      probePending = true;
+      var fin = function () { setTimeout(function () { probePending = false; }, 800); };
+      try {
+        var t0 = new Date().getTime();
+        var x = new XMLHttpRequest();
+        x.open('GET', freshUrl(src).split('#')[0], true);
+        x.setRequestHeader('Range', 'bytes=0-65535');
+        x.responseType = 'arraybuffer';
+        x.timeout = 15000;
+        x.onload = function () {
+          fin();
+          tvLog('網路測試 ' + src.split('/').pop() + '｜HTTP ' + x.status + '｜收到 ' + (x.response ? x.response.byteLength : 0) + ' bytes｜' + (new Date().getTime() - t0) + 'ms');
+        };
+        x.onerror = function () { fin(); tvLog('網路測試失敗（連不上）｜' + (new Date().getTime() - t0) + 'ms'); };
+        x.ontimeout = function () { fin(); tvLog('網路測試逾時 15 秒'); };
+        x.send();
+      } catch (e) { probePending = false; tvLog('網路測試例外 ' + e); }
     }
     function clockStr() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 
@@ -662,7 +691,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v8.1 紀錄只送試算表';
+    var PAGE_VERSION = '2026-11-04 v8.2 網路測試';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = false;
