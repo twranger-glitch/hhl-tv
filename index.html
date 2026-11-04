@@ -415,6 +415,7 @@
 
     function stopPlayer() {
       var p = $('player');
+      clearInterval(videoWatch);
       clearPlayerEvents(p);
       try { p.pause(); } catch (e) {}
       clearTimeout(playerHideTimer);
@@ -428,31 +429,48 @@
       try { p.pause(); p.removeAttribute('src'); p.load(); } catch (e) {}
     }
 
+    // 老 LG 實測（偵錯畫面）：影片播完（ended）後，用「跳回 0 秒」重播，電視要卡 2～3 分鐘才會動，
+    // 期間畫面停在最後一格、沒有聲音。但「重新載入影片」的第一次播放永遠正常。
+    // 所以：每次輪到影片都重新載入，不再跳回 0 秒；並且改成看「影片有沒有在走」來決定何時換下一張。
+    var videoWatch = null;
     function playVideo(src, sound, onDone) {
       var p = $('player');
       clearTimeout(playerHideTimer);
+      clearInterval(videoWatch);
       clearPlayerEvents(p);
       p.muted = !sound;
       p.volume = 1;
-      if (p.getAttribute('data-src') !== src) {
-        p.setAttribute('data-src', src);
-        p.src = src;
-      } else {
-        try { p.currentTime = 0; } catch (e) {}
-      }
-      p.style.display = 'block';
-      dbg('play ' + src.split('/').pop() + (sound ? ' (聲音)' : ' (靜音)'));
 
-      var t = setTimeout(function () { dbg('timeout 30s'); onDone(); }, 30000);   // 片長讀不到就播 30 秒
-      var setTimer = function () {
-        clearTimeout(t);
-        var ms = (p.duration * 1000) + 1000;
-        t = setTimeout(onDone, (isNaN(ms) || !isFinite(ms)) ? 30000 : Math.min(ms, 600000));
-        timer = t;
+      // 重新載入（等同第一次播放）
+      try { p.pause(); } catch (e) {}
+      try { p.removeAttribute('src'); p.load(); } catch (e) {}
+      p.setAttribute('data-src', src);
+      p.src = src;
+      try { p.load(); } catch (e) {}
+      p.style.display = 'block';
+      dbg('load+play ' + src.split('/').pop() + (sound ? ' (聲音)' : ' (靜音)'));
+
+      var finished = false;
+      var done = function (why) {
+        if (finished) return;
+        finished = true;
+        clearInterval(videoWatch);
+        dbg('next: ' + why);
+        onDone();
       };
-      if (p.readyState >= 1) setTimer(); else p.onloadedmetadata = setTimer;
-      p.onended = function () { dbg('ended'); clearTimeout(t); onDone(); };
-      p.onerror = function () { dbg('ERROR code=' + (p.error ? p.error.code : '?') + ' at t=' + (p.currentTime || 0).toFixed(1)); clearTimeout(t); p.removeAttribute('data-src'); onDone(); };
+      p.onended = function () { done('ended'); };
+      p.onerror = function () { done('ERROR code=' + (p.error ? p.error.code : '?')); };
+
+      // 每秒檢查：播到尾巴就換下一張；連續 12 秒時間沒前進（卡住）就跳過；最長 10 分鐘
+      var lastT = -1, stuckSecs = 0, totalSecs = 0;
+      videoWatch = setInterval(function () {
+        totalSecs++;
+        var ct = p.currentTime || 0;
+        if (isFinite(p.duration) && p.duration > 1 && ct >= p.duration - 0.3) { done('reached end'); return; }
+        if (ct > lastT + 0.05) { stuckSecs = 0; lastT = ct; } else { stuckSecs++; }
+        if (stuckSecs >= 12) { done('stuck ' + stuckSecs + 's at t=' + ct.toFixed(1)); return; }
+        if (totalSecs >= 600) { done('10 min cap'); }
+      }, 1000);
 
       try {
         var pr = p.play();
@@ -466,7 +484,7 @@
           });
         }
       } catch (e) {}
-      return t;
+      return null;
     }
 
     function play() {
@@ -576,7 +594,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 偵錯版（播放邏輯同 #4）';
+    var PAGE_VERSION = '2026-11-04 v3 每次重新載入影片';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = true;
