@@ -626,10 +626,10 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v5 影片播完重新整理網頁';
+    var PAGE_VERSION = '2026-11-04 v5.1 關閉除錯框';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
-    var DEBUG_ON_OLD_TV = true;
+    var DEBUG_ON_OLD_TV = false;
     var DEBUG = location.hash === '#debug' || (DEBUG_ON_OLD_TV && CHROME_VER > 0 && CHROME_VER < 80);
     var dbgLines = [];
     try { if (DEBUG) dbgLines = JSON.parse(localStorage.getItem('hhl_dbg') || '[]'); } catch (e) { dbgLines = []; }
