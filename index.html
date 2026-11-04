@@ -472,7 +472,8 @@
         if (st.log.length > 6) st.log.length = 6;
         saveStats(st);
         dbg('next: ' + why);
-        tvLog((ok ? '成功 ' : '失敗 ') + src.split('/').pop() + '｜' + why + '｜距上次放開' + gap + '秒｜累計成功' + st.ok + '失敗' + st.fail + '｜ready=' + p.readyState + ' net=' + p.networkState);
+        tvLog((ok ? '成功 ' : '失敗 ') + src.split('/').pop() + '｜' + why + '｜距上次放開' + gap + '秒｜累計成功' + st.ok + '失敗' + st.fail + '｜ready=' + p.readyState + ' net=' + p.networkState + '｜事件:' + evBuf.join(','));
+        evBuf = [];
         onDone();
       };
       p.onended = function () { done('ended'); };
@@ -661,10 +662,10 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v8 原網址+紀錄';
+    var PAGE_VERSION = '2026-11-04 v8.1 紀錄只送試算表';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
-    var DEBUG_ON_OLD_TV = true;
+    var DEBUG_ON_OLD_TV = false;
     var DEBUG = location.hash === '#debug' || (DEBUG_ON_OLD_TV && CHROME_VER > 0 && CHROME_VER < 80);
     var dbgLines = [];
     try { if (DEBUG) dbgLines = JSON.parse(localStorage.getItem('hhl_dbg') || '[]'); } catch (e) { dbgLines = []; }
@@ -676,6 +677,19 @@
       if (dbgLines.length > 8) dbgLines.length = 8;
       saveDbg();
     }
+    // 播放器事件一律記下來（不管有沒有除錯框），失敗時一起送到試算表
+    var evBuf = [];
+    (function () {
+      var evs2 = ['loadstart', 'loadedmetadata', 'canplay', 'playing', 'waiting', 'stalled', 'ended', 'emptied', 'suspend', 'abort', 'error'];
+      for (var k = 0; k < evs2.length; k++) {
+        (function (ev) {
+          $('player').addEventListener(ev, function () {
+            evBuf.push(clockStr().slice(3) + ' ' + ev);
+            if (evBuf.length > 12) evBuf.shift();
+          });
+        })(evs2[k]);
+      }
+    })();
     if (DEBUG) {
       var dbgBox = document.createElement('div');
       dbgBox.style.cssText = 'position:absolute;top:80px;left:40px;z-index:99;background:rgba(0,0,0,.85);color:#0f0;font:20px/1.4 monospace;padding:10px;white-space:pre;';
@@ -719,6 +733,7 @@
         if (r && new Date().getTime() - r.at < 5 * 60 * 1000) {
           current = Number(r.next) || 0;
           dbg('page reloaded, resume at ' + (current + 1));
+          tvLog('影片後重新整理完成，從第 ' + (current + 1) + ' 張接著播');
           var c = JSON.parse(localStorage.getItem('hhl_cache') || 'null');
           if (c) handleData(c);
         }
