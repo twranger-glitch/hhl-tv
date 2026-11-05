@@ -54,7 +54,7 @@
     .slide.no-image { background: linear-gradient(135deg, #263238, #1565c0); }
     /* 影片投影片本身透明，底下是全頁共用的播放器 */
     .slide.video-slide { background: transparent; }
-    #player {
+    #player, #framecanvas {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       z-index: 1; background: #000; object-fit: contain; display: none;
     }
@@ -152,7 +152,7 @@
       <div>海佃地下圖書室</div>
       <div id="clock"></div>
     </div>
-    <div id="slides"><video id="player" playsinline preload="none"></video></div>
+    <div id="slides"><video id="player" playsinline preload="none"></video><canvas id="framecanvas" width="854" height="480"></canvas></div>
     <div id="marqueeWrap"><div id="marquee">Hidden below, growing beyond.</div></div>
   </div>
 
@@ -214,7 +214,7 @@
       var box = $('slides');
       for (var i = box.childNodes.length - 1; i >= 0; i--) {
         var n = box.childNodes[i];
-        if (n.id !== 'player') box.removeChild(n);
+        if (n.id !== 'player' && n.id !== 'framecanvas') box.removeChild(n);
       }
     }
 
@@ -550,7 +550,7 @@
     }
     // 老電視把播放紀錄送回 Google 試算表「TV紀錄」工作表（不用走去電視前拍照）
     function tvLog(msg) {
-      if (!(CHROME_VER > 0 && CHROME_VER < 80) && location.hash !== '#debug') return;
+      if (!(CHROME_VER > 0 && CHROME_VER < 80) && location.hash.indexOf('debug') < 0) return;
       try {
         var img = new Image();
         img.src = GAS_API_URL + '?action=log&v=' + encodeURIComponent(PAGE_VERSION) +
@@ -580,6 +580,150 @@
       } catch (e) { probePending = false; tvLog('網路測試例外 ' + e); }
     }
     function clockStr() { var d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+
+    // ===== 老電視用的「圖片動畫 + 音訊」播放器 =====
+    // 老 LG 的影片播放器每次開機只能用一次（之後完全拿不到資料），但一般下載和圖片都正常。
+    // 所以把影片事先轉成一張張圖片（images/<檔名>.frames/，由 GitHub Actions 自動產生），
+    // 畫面用 <canvas> 畫，聲音用 Web Audio 解碼播放，完全不經過電視的影片播放器。
+    var USE_FRAMES = (CHROME_VER > 0 && CHROME_VER < 80) || location.hash.indexOf('frames') >= 0;
+    var fp = null;   // 目前的動畫播放狀態
+    var audioCtx = null;
+    function framesBase(src) {
+      var u = src.split('#')[0].split('?')[0];
+      if (!/\.mp4$/i.test(u)) return '';
+      // 只處理放在本網站上的影片（雲端硬碟、YouTube 不行）
+      if (/^https?:\/\//i.test(u) && u.indexOf(location.host) < 0 && !/tv\.twranger\.com/i.test(u)) return '';
+      return u.replace(/\.mp4$/i, '.frames/');
+    }
+    function getJson(url, ok, fail) {
+      try {
+        var x = new XMLHttpRequest();
+        x.open('GET', url, true);
+        x.timeout = 10000;
+        x.onload = function () {
+          if (x.status >= 200 && x.status < 300) { try { ok(JSON.parse(x.responseText)); return; } catch (e) {} }
+          fail('HTTP ' + x.status);
+        };
+        x.onerror = function () { fail('連不上'); };
+        x.ontimeout = function () { fail('逾時'); };
+        x.send();
+      } catch (e) { fail('例外 ' + e); }
+    }
+    function stopFrames() {
+      if (!fp) return;
+      var f = fp; fp = null;
+      f.stopped = true;
+      clearInterval(f.tick);
+      try { if (f.source) f.source.stop(0); } catch (e) {}
+      for (var k in f.imgs) { try { f.imgs[k].onload = null; f.imgs[k].src = ''; } catch (e) {} }
+      f.imgs = {};
+      var c = $('framecanvas');
+      setTimeout(function () { if (!fp) c.style.display = 'none'; }, 1100);
+    }
+    function playFrames(src, sound, onDone, onFail) {
+      stopFrames();
+      var base = framesBase(src);
+      var name = src.split('/').pop().split('#')[0];
+      if (!base) { onFail('不是本站 mp4'); return; }
+      var f = { stopped: false, imgs: {}, loaded: {}, source: null, tick: null, m: null, t0: 0, useAudio: false, drawn: -1, misses: 0 };
+      fp = f;
+      var finished = false;
+      var finish = function (why, ok) {
+        if (finished || f.stopped) return;
+        finished = true;
+        stopFrames();
+        tvLog('動畫' + (ok ? '成功 ' : '中斷 ') + name + '｜' + why + '｜畫出 ' + f.drawn + ' 格、缺圖 ' + f.misses + ' 次');
+        onDone();
+      };
+      var fail = function (why) {
+        if (finished || f.stopped) return;
+        finished = true;
+        stopFrames();
+        tvLog('動畫載入失敗 ' + name + '｜' + why + '｜改用影片播放器');
+        onFail(why);
+      };
+      var loadSheet = function (i) {
+        if (i < 0 || i >= f.m.sheets || f.imgs[i]) return;
+        var img = new Image();
+        img.onload = function () { f.loaded[i] = true; };
+        img.src = base + 's' + ('00' + (i + 1)).slice(-3) + '.jpg';
+        f.imgs[i] = img;
+      };
+      var clock = function () {
+        if (f.useAudio) return audioCtx.currentTime - f.t0;
+        return (new Date().getTime() - f.t0) / 1000;
+      };
+      var canvas = $('framecanvas');
+      var ctx2d = canvas.getContext('2d');
+      var start = function () {
+        if (f.stopped) return;
+        canvas.style.display = 'block';
+        if (f.audioBuf) {
+          try {
+            var srcNode = audioCtx.createBufferSource();
+            srcNode.buffer = f.audioBuf;
+            srcNode.connect(audioCtx.destination);
+            srcNode.start(0);
+            f.source = srcNode;
+            f.t0 = audioCtx.currentTime;
+            f.useAudio = true;
+          } catch (e) { f.useAudio = false; }
+        }
+        if (!f.useAudio) f.t0 = new Date().getTime();
+        var per = f.m.cols * f.m.rows;
+        f.tick = setInterval(function () {
+          if (f.stopped) return;
+          var t = clock();
+          if (t >= f.m.duration) { finish('播完', true); return; }
+          var n = Math.floor(t * f.m.fps);
+          var si = Math.floor(n / per);
+          // 預先下載後面 4 張，丟掉已經播過的
+          for (var k = si; k <= si + 4; k++) loadSheet(k);
+          for (var old in f.imgs) {
+            if (Number(old) < si) { try { f.imgs[old].src = ''; } catch (e) {} delete f.imgs[old]; delete f.loaded[old]; }
+          }
+          if (n === f.lastN) return;
+          if (!f.loaded[si]) { f.misses++; return; }
+          f.lastN = n;
+          var cell = n % per;
+          var sx = (cell % f.m.cols) * f.m.w, sy = Math.floor(cell / f.m.cols) * f.m.h;
+          try { ctx2d.drawImage(f.imgs[si], sx, sy, f.m.w, f.m.h, 0, 0, canvas.width, canvas.height); f.drawn++; } catch (e) {}
+        }, Math.max(40, Math.floor(500 / 8)));
+      };
+      getJson(base + 'manifest.json?t=' + Math.floor(new Date().getTime() / 600000), function (m) {
+        if (f.stopped) return;
+        f.m = m;
+        canvas.width = m.w; canvas.height = m.h;
+        for (var k = 0; k < 4; k++) loadSheet(k);
+        var needAudio = sound && m.audio;
+        var waited = 0;
+        var waitReady = function () {
+          if (f.stopped) return;
+          var audioReady = !needAudio || f.audioBuf || f.audioFailed;
+          if (f.loaded[0] && audioReady) { start(); return; }
+          waited += 250;
+          if (waited > 20000) { fail('20 秒內圖片或聲音沒載完'); return; }
+          setTimeout(waitReady, 250);
+        };
+        if (needAudio) {
+          try {
+            if (!audioCtx) { var AC = window.AudioContext || window.webkitAudioContext; audioCtx = new AC(); }
+            if (audioCtx.resume) { try { audioCtx.resume(); } catch (e) {} }
+            var x = new XMLHttpRequest();
+            x.open('GET', base + m.audio, true);
+            x.responseType = 'arraybuffer';
+            x.onload = function () {
+              if (x.status < 200 || x.status >= 300) { f.audioFailed = true; tvLog('動畫聲音下載失敗 HTTP ' + x.status); return; }
+              audioCtx.decodeAudioData(x.response, function (buf) { f.audioBuf = buf; },
+                function () { f.audioFailed = true; tvLog('動畫聲音解碼失敗，改成靜音播放'); });
+            };
+            x.onerror = function () { f.audioFailed = true; tvLog('動畫聲音連不上，改成靜音播放'); };
+            x.send();
+          } catch (e) { f.audioFailed = true; tvLog('動畫聲音例外 ' + e); }
+        }
+        waitReady();
+      }, function (why) { fail('沒有動畫檔（' + why + '）'); });
+    }
 
     function play() {
       clearTimeout(timer);
@@ -635,11 +779,20 @@
       var videoSrc = el.getAttribute('data-video');
       var ytEl = el.querySelector('iframe');
       if (!videoSrc) stopPlayer();
-      if (videoSrc) {
+      if (!videoSrc) stopFrames();
+      var useVideoPlayer = function () {
+        if (token !== playToken) return;
         timer = playVideo(videoSrc, el.getAttribute('data-sound') === '1', RELOAD_AFTER_VIDEO ? function () {
           if (token !== playToken) return;
           reloadAfterVideo((current + 1) % slides.length);
         } : nextSlide);
+      };
+      if (videoSrc && USE_FRAMES && framesBase(videoSrc)) {
+        stopPlayer();
+        playFrames(videoSrc, el.getAttribute('data-sound') === '1', nextSlide, useVideoPlayer);
+      } else if (videoSrc) {
+        stopFrames();
+        useVideoPlayer();
       } else if (ytEl) {
         // YouTube 無法得知片長，依試算表「秒數」欄，沒填就播 30 秒
         timer = setTimeout(nextSlide, (Number(activeData.duration) || 30) * 1000);
@@ -691,7 +844,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-04 v8.2 網路測試';
+    var PAGE_VERSION = '2026-11-05 v9 圖片動畫+音訊';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = false;

@@ -1,0 +1,30 @@
+name: 影片轉老電視動畫
+# 上傳或更新 images/ 裡的 mp4 後，自動產生 images/<檔名>.frames/（老 LG 電視用）
+on:
+  push:
+    branches: [main]
+    paths: ['images/**.mp4', 'tools/make-frames.sh']
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  frames:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+      - run: tools/make-frames.sh
+      - name: 提交產生的檔案
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images
+          if git diff --cached --quiet; then echo "沒有變更"; exit 0; fi
+          git commit -m "自動產生老電視用的影片動畫"
+          git push
+      - name: 觸發網站更新
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST repos/${{ github.repository }}/pages/builds || true
