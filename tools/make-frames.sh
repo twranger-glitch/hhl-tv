@@ -3,7 +3,7 @@
 # 產出：images/<檔名>.frames/{manifest.json, s001.jpg..., audio.mp3}
 # 用法：tools/make-frames.sh [影片檔...]   （不給參數就處理 images/ 底下全部 mp4）
 set -euo pipefail
-FPS=8; W=1280; H=720; COLS=2; ROWS=2; Q=8; VER=3
+FPS=15; W=960; H=540; COLS=2; ROWS=2; Q=9; VER=4
 files=("$@"); [ ${#files[@]} -eq 0 ] && files=(images/*.mp4)
 for f in "${files[@]}"; do
   [ -f "$f" ] || continue
