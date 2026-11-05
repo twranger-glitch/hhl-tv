@@ -632,7 +632,7 @@
         if (finished || f.stopped) return;
         finished = true;
         stopFrames();
-        tvLog('動畫' + (ok ? '成功 ' : '中斷 ') + name + '｜' + why + '｜畫出 ' + f.drawn + ' 格、缺圖 ' + f.misses + ' 次');
+        tvLog('動畫' + (ok ? '成功 ' : '中斷 ') + name + '｜' + why + '｜畫出 ' + f.drawn + '/' + (f.m ? f.m.frames : '?') + ' 格、缺圖 ' + f.misses + ' 次');
         onDone();
       };
       var fail = function (why) {
@@ -844,7 +844,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-05 v9.1 動畫720p';
+    var PAGE_VERSION = '2026-11-05 v9.2 動畫720p JPEG';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = false;
