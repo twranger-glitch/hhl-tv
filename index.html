@@ -645,7 +645,11 @@
       var loadSheet = function (i) {
         if (i < 0 || i >= f.m.sheets || f.imgs[i]) return;
         var img = new Image();
-        img.onload = function () { f.loaded[i] = true; };
+        img.onload = function () {
+          // 下載完先偷偷畫一次到小畫布，讓電視提早解碼，輪到它時就不會卡
+          try { warm.drawImage(img, 0, 0, 1, 1); } catch (e) {}
+          f.loaded[i] = true;
+        };
         img.src = base + 's' + ('00' + (i + 1)).slice(-3) + '.' + (f.m.ext || 'jpg');
         f.imgs[i] = img;
       };
@@ -655,6 +659,9 @@
       };
       var canvas = $('framecanvas');
       var ctx2d = canvas.getContext('2d');
+      var warmCanvas = document.createElement('canvas');
+      warmCanvas.width = 1; warmCanvas.height = 1;
+      var warm = warmCanvas.getContext('2d');
       var start = function () {
         if (f.stopped) return;
         canvas.style.display = 'block';
@@ -681,8 +688,8 @@
           if (t >= f.m.duration) { finish('播完', true); return; }
           var n = Math.floor(t * f.m.fps);
           var si = Math.floor(n / per);
-          // 預先下載後面 8 張，丟掉已經播過的
-          for (var k = si; k <= si + 8; k++) loadSheet(k);
+          // 預先下載後面 20 張（約 5 秒），丟掉已經播過的
+          for (var k = si; k <= si + 20; k++) loadSheet(k);
           for (var old in f.imgs) {
             if (Number(old) < si) { try { f.imgs[old].src = ''; } catch (e) {} delete f.imgs[old]; delete f.loaded[old]; }
           }
@@ -699,7 +706,7 @@
         if (f.stopped) return;
         f.m = m;
         canvas.width = m.w; canvas.height = m.h;
-        for (var k = 0; k < 4; k++) loadSheet(k);
+        for (var k = 0; k < 12; k++) loadSheet(k);
         var needAudio = sound && m.audio;
         var waited = 0;
         var waitReady = function () {
@@ -849,7 +856,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-05 v9.3 動畫每秒15格';
+    var PAGE_VERSION = '2026-11-05 v9.4 提早下載解碼';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = false;
