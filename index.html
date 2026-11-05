@@ -646,7 +646,7 @@
         if (i < 0 || i >= f.m.sheets || f.imgs[i]) return;
         var img = new Image();
         img.onload = function () { f.loaded[i] = true; };
-        img.src = base + 's' + ('00' + (i + 1)).slice(-3) + '.jpg';
+        img.src = base + 's' + ('00' + (i + 1)).slice(-3) + '.' + (f.m.ext || 'jpg');
         f.imgs[i] = img;
       };
       var clock = function () {
@@ -678,7 +678,7 @@
           var n = Math.floor(t * f.m.fps);
           var si = Math.floor(n / per);
           // 預先下載後面 4 張，丟掉已經播過的
-          for (var k = si; k <= si + 4; k++) loadSheet(k);
+          for (var k = si; k <= si + 6; k++) loadSheet(k);
           for (var old in f.imgs) {
             if (Number(old) < si) { try { f.imgs[old].src = ''; } catch (e) {} delete f.imgs[old]; delete f.loaded[old]; }
           }
@@ -844,7 +844,7 @@
 
     // 網址最後加上 #ua，會在畫面上方顯示瀏覽器版本（查電視相容性用）
     // 網址最後加上 #debug：左上角顯示播放器狀態（只顯示資訊，不改變播放行為）
-    var PAGE_VERSION = '2026-11-05 v9 圖片動畫+音訊';
+    var PAGE_VERSION = '2026-11-05 v9.1 動畫720p';
     // 偵錯畫面：老電視（Chromium 80 以下）自動顯示，不用改網址；電腦上要加 #debug 才顯示。
     // 查完問題後，把下面的 true 改成 false 就會關掉。
     var DEBUG_ON_OLD_TV = false;
